@@ -226,7 +226,7 @@ def run(
                             x2 = int(xyxy[2].item())
                             y2 = int(xyxy[3].item())
                             roi = im0[y1:y2, x1:x2]
-                            blur = cv2.GaussianBlur(roi, (51, 51), 25)
+                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
 
                             im0[y1:y2, x1:x2] = blur
                             
@@ -237,7 +237,7 @@ def run(
                             x2 = int(xyxy[2].item())
                             y2 = int(xyxy[3].item())
                             roi = im0[y1:y2, x1:x2]
-                            blur = cv2.GaussianBlur(roi, (51, 51), 25)
+                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
 
                             im0[y1:y2, x1:x2] = blur
 
@@ -249,7 +249,7 @@ def run(
                             x2 = int(xyxy[2].item())
                             y2 = int(xyxy[3].item())
                             roi = im0[y1:y2, x1:x2]
-                            blur = cv2.GaussianBlur(roi, (51, 51), 25)
+                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
 
                             im0[y1:y2, x1:x2] = blur
 
@@ -262,7 +262,7 @@ def run(
                             x2 = int(xyxy[2].item())
                             y2 = int(xyxy[3].item())
                             roi = im0[y1:y2, x1:x2]
-                            blur = cv2.GaussianBlur(roi, (51, 51), 25)
+                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
 
                             im0[y1:y2, x1:x2] = blur
 
