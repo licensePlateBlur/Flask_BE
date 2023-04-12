@@ -10,6 +10,8 @@ import json
 import torch
 import argparse
 from flask_cors import CORS
+import base64
+from json import dumps
 
 app = Flask(__name__)
 CORS(app)
@@ -46,8 +48,16 @@ def detect():
     #if video.filename.endswith('.jpg') or video.filename.endswith('.png'):
     if video.filename.endswith('.jpg') or video.filename.endswith('.png'):
         img_bytes = video.read()
+        # img_temp = Image.open(io.BytesIO(img_bytes))
+
         img = Image.open(io.BytesIO(img_bytes))
-        obj = secure_filename(video.filename)
+
+        # img_temp.thumbnail((600, 600), Image.ANTIALIAS)
+        # img_temp.save('test_n.jpg')
+
+        # img = Image.open('test_n.jpg')
+
+        obj = secure_filename(img.filename)
         video_path = os.path.join(os.getcwd(), "static", obj)
         # model = torch.hub.load('yolov5', 'yolov5s', pretrained=True, source='local')  # force_reload = recache latest code
         model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v3', source='local')  # force_reload = recache latest code
@@ -99,6 +109,15 @@ def detect():
         #return os.path.join(uploads_dir, obj)
 
 
+        video_original = open(video_path, 'rb')
+        video_encoded = base64.b64encode(video_original.read())
+        video_string = video_encoded.decode('utf-8')
+        raw_data = {"video_base64": video_string}
+        # json_data = dumps(raw_data, indent=2)
+
+
+
+
         rawstring = 'type, class, time\n' + video_info_data
         lines = rawstring.split('\n')
         keys = lines[0].split(',')
@@ -108,7 +127,8 @@ def detect():
             values = line.split(',')
             result.append(dict(zip(keys, values)))
 
-        new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
+        # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
+        new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
         result.insert(0, new_data)
 
         json_string = json.dumps(result)
