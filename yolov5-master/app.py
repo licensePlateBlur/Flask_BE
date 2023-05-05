@@ -13,8 +13,21 @@ from flask_cors import CORS
 import base64
 from json import dumps
 
+import datetime
+
+from flaskext.mysql import MySQL
+
+mysql = MySQL()
 app = Flask(__name__)
 CORS(app)
+
+
+app.config['MYSQL_DATABASE_USER'] = 'root'
+app.config['MYSQL_DATABASE_PASSWORD'] = 'root'
+app.config['MYSQL_DATABASE_DB'] = 'privacy'
+app.config['MYSQL_DATABASE_HOST'] = 'localhost'
+app.secret_key = "root"
+mysql.init_app(app)
 
 
 uploads_dir = os.path.join(app.instance_path, 'uploads')
@@ -32,31 +45,31 @@ def hello_world():
     return render_template('index.html')
 
 
-@app.route("/detect", methods=['GET', 'POST'])
-def detect():
-    # if not request.method == "POST":
-    #     return
-
-    
+@app.route("/detect_image", methods=['GET', 'POST'])
+def detect_image():
+     
     print("detect activated")
-    video = request.files['video']
-    #video = request.files['file']
-    #name = request.form['name']
+    image = request.files['image']
 
-    #print(name)
 
-    #if video.filename.endswith('.jpg') or video.filename.endswith('.png'):
-    if video.filename.endswith('.jpg') or video.filename.endswith('.png'):
-        img_bytes = video.read()
-        # img_temp = Image.open(io.BytesIO(img_bytes))
 
+
+
+    if image.filename.endswith('.jpg') or image.filename.endswith('.png'):
+        img_bytes = image.read()
         img = Image.open(io.BytesIO(img_bytes))
 
-        # img_temp.thumbnail((600, 600), Image.ANTIALIAS)
-        # img_temp.save('test_n.jpg')
+        split_tup = os.path.splitext(image.filename)
+        file_extension = split_tup[1]
 
-        # img = Image.open('test_n.jpg')
+        # tmp_savename = f"tmp/{image.filename}"
 
+        # request.files['image'].save(tmp_savename)
+        # file_size = os.stat(tmp_savename).st_size
+
+        file_size = len(img_bytes)
+
+        
         obj = secure_filename(img.filename)
         video_path = os.path.join(os.getcwd(), "static", obj)
         # model = torch.hub.load('yolov5', 'yolov5s', pretrained=True, source='local')  # force_reload = recache latest code
@@ -68,8 +81,25 @@ def detect():
         result_vals=[]
         result_vals = json.loads(results.pandas().xyxy[0].to_json(orient="records"))
         print("done")
-        img_savename = f"static/{video.filename}"
+        img_savename = f"static/{image.filename}"
         Image.fromarray(results.ims[0]).save(img_savename)
+
+        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), img_savename, file_size, file_extension, image.filename, image.filename)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+
+        if not data:
+            conn.commit()
+        else: print ("DB upload failed")
+
+        cursor.close()
+        conn.close()
         
         
         new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
@@ -86,13 +116,24 @@ def detect():
         # return result_vals_quote
         # return result_vals_quote.replace("'", '"')
         return json.loads(results.pandas().xyxy[0].to_json(orient="records"))
+    else: 
+        return "첨부한 파일이 이미지 형식이 맞는지 확인해주세요."
 
 
+@app.route("/detect_video", methods=['GET', 'POST'])
+def detect_video():
+   
+    print("detect activated")
+    video = request.files['video']
 
-    else:
+    split_tup = os.path.splitext(video.filename)
+    file_extension = split_tup[1]
+
+    vid_bytes = video.read()
+    file_size = len(vid_bytes)
 
 
-
+    if video.filename.endswith('.mp4') or video.filename.endswith('.avi'):
         video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
         print(video)
         subprocess.run("dir", shell=True)
@@ -132,15 +173,92 @@ def detect():
         result.insert(0, new_data)
 
         json_string = json.dumps(result)
-            
+                
         print(json_string)
+
+        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        vid_savename = f"static/{video.filename}"
+
+
+        conn = mysql.connect()
+        cursor = conn.cursor()
+
+        sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, video.filename, video.filename)
+        cursor.execute(sql)
+        data = cursor.fetchall()
+
+        if not data:
+            conn.commit()
+        else: print ("DB upload failed")
+
+        cursor.close()
+        conn.close()
 
 
         return_json = '{"absolute_path": "' + os.path.join(os.getcwd(), "static", obj) + '", "info": '
         # return os.path.join(os.getcwd(), "static", obj) + '\n' + video_info_data
         return json_string
+    else: 
+        return "첨부한 파일이 동영상 형식이 맞는지 확인해주세요."
         
-        #return os.path.join(uploads_dir, secure_filename(video.filename)), obj
+    #return os.path.join(uploads_dir, secure_filename(video.filename)), obj
+
+
+@app.route("/detect_realtime", methods=['GET', 'POST'])
+def detect_realtime():
+   
+    print("detect activated")
+    video = request.files['video']
+
+    video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
+    print(video)
+    subprocess.run("dir", shell=True)
+    subprocess.run(['python', 'detect.py', '--source', '0', '--weights', 'privacy_yolov5_v3.pt'], shell=True)
+
+    # return os.path.join(uploads_dir, secure_filename(video.filename))
+    obj = secure_filename(video.filename)
+    # return obj
+    video_path = os.path.join(os.getcwd(), "static", obj)
+    video_info = open("video_info.log", 'r')
+    video_info_data = video_info.read()
+    print('file read', video_info.read())
+    # return jsonify({'video_path': video_path, 'video_info': file})
+    #return os.path.join(uploads_dir, obj)
+
+
+    video_original = open(video_path, 'rb')
+    video_encoded = base64.b64encode(video_original.read())
+    video_string = video_encoded.decode('utf-8')
+    raw_data = {"video_base64": video_string}
+    # json_data = dumps(raw_data, indent=2)
+
+
+
+
+    rawstring = 'type, class, time\n' + video_info_data
+    lines = rawstring.split('\n')
+    keys = lines[0].split(',')
+    result=[]
+
+    for line in lines[1:]:
+        values = line.split(',')
+        result.append(dict(zip(keys, values)))
+
+    # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
+    new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
+    result.insert(0, new_data)
+
+    json_string = json.dumps(result)
+            
+    print(json_string)
+
+
+    return_json = '{"absolute_path": "' + os.path.join(os.getcwd(), "static", obj) + '", "info": '
+    # return os.path.join(os.getcwd(), "static", obj) + '\n' + video_info_data
+    return json_string
+        
+    #return os.path.join(uploads_dir, secure_filename(video.filename)), obj
 
 @app.route("/opencam", methods=['GET'])
 def opencam():
