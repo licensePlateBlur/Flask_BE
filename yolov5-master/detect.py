@@ -142,6 +142,9 @@ def run(
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, vid_stride=vid_stride)
     vid_path, vid_writer = [None] * bs, [None] * bs
 
+    #time counting
+    time_cnt = 0
+
     # Run inference
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
     seen, windows, dt = 0, [], (Profile(), Profile(), Profile())
@@ -300,6 +303,21 @@ def run(
                         vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer[i].write(im0)
 
+
+
+
+
+        # time_cnt : 초 단위 변수            
+        if frame % int(fps) == 0:
+            time_cnt += 1
+
+        s += ", "
+        s += str(time_cnt)
+        s += " second"
+
+
+
+       
         # Print time (inference-only)
         # seperator = ':'
         # s = seperator.join(s.split(seperator)[2:])

@@ -12,7 +12,6 @@ import argparse
 from flask_cors import CORS
 import base64
 from json import dumps
-import time
 
 import datetime
 
@@ -82,13 +81,7 @@ def detect_image():
         result_vals=[]
         result_vals = json.loads(results.pandas().xyxy[0].to_json(orient="records"))
         print("done")
-
-
-        img_savename_backslash = os.path.join(os.getcwd(), "static", image.filename)
-        img_savename = img_savename_backslash.replace("\\", "/")
-
-
-
+        img_savename = f"static/{image.filename}"
         Image.fromarray(results.ims[0]).save(img_savename)
 
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -136,7 +129,9 @@ def detect_video():
     split_tup = os.path.splitext(video.filename)
     file_extension = split_tup[1]
 
-    
+    vid_bytes = video.read()
+    file_size = len(vid_bytes)
+
 
     if video.filename.endswith('.mp4') or video.filename.endswith('.avi'):
         video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
@@ -146,9 +141,6 @@ def detect_video():
 
         # return os.path.join(uploads_dir, secure_filename(video.filename))
         obj = secure_filename(video.filename)
-        vid_bytes = video.read()
-        file_size = len(vid_bytes)
-
         # return obj
         video_path = os.path.join(os.getcwd(), "static", obj)
         video_info = open("video_info.log", 'r')
@@ -176,8 +168,8 @@ def detect_video():
             values = line.split(',')
             result.append(dict(zip(keys, values)))
 
-        new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
-        # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
+        # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
+        new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
         result.insert(0, new_data)
 
         json_string = json.dumps(result)
@@ -186,10 +178,7 @@ def detect_video():
 
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-        #vid_savename = f"static/{video.filename}"
-        vid_savename_backslash = os.path.join(os.getcwd(), "static", video.filename)
-        vid_savename = vid_savename_backslash.replace("\\", "/")
-
+        vid_savename = f"static/{video.filename}"
 
 
         conn = mysql.connect()
@@ -271,71 +260,11 @@ def detect_realtime():
         
     #return os.path.join(uploads_dir, secure_filename(video.filename)), obj
 
-@app.route("/opencam", methods=['GET', 'POST'])
+@app.route("/opencam", methods=['GET'])
 def opencam():
     print("here")
     subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v3.pt', '--source', '0'], shell=True)
-
-    time.sleep(1)
-
-
-    video = open((os.path.join(os.getcwd(), "static", "0.mp4")), 'rb')
-
-    # split_tup = os.path.splitext(video.filename)
-    file_extension = "mp4"
-
-    # obj = secure_filename(video.filename)
-    vid_bytes = video.read()
-    file_size = len(vid_bytes)
-
-    video_path = os.path.join(os.getcwd(), "static", "0.mp4")
-    video_info = open("video_info.log", 'r')
-    video_info_data = video_info.read()
-    print('file read', video_info.read())
-
-
-    rawstring = 'type, class, time\n' + video_info_data
-    lines = rawstring.split('\n')
-    keys = lines[0].split(',')
-    result=[]
-
-    for line in lines[1:]:
-        values = line.split(',')
-        result.append(dict(zip(keys, values)))
-
-    new_data = {"absolute_path": os.path.join(os.getcwd(), "static", "0.mp4")}
-
-
-    result.insert(0, new_data)
-
-    json_string = json.dumps(result)
-                
-    print(json_string)
-
-    current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    # vid_savename = f"static/0.mp4"
-    vid_savename_backslash = os.path.join(os.getcwd(), "static", "0.mp4")
-    vid_savename = vid_savename_backslash.replace("\\", "/")
-
-
-    conn = mysql.connect()
-    cursor = conn.cursor()
-
-    sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, "0.mp4", "0.mp4")
-    cursor.execute(sql)
-    data = cursor.fetchall()
-
-    if not data:
-        conn.commit()
-    else: print ("DB upload failed")
-
-    cursor.close()
-    conn.close()
-
-    return json_string
-
-    # return "done"
+    return "done"
     
 
 @app.route('/return-files', methods=['GET'])
