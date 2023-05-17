@@ -13,6 +13,7 @@ from flask_cors import CORS
 import base64
 from json import dumps
 import time
+import uuid
 
 import datetime
 
@@ -61,6 +62,7 @@ def detect_image():
         img = Image.open(io.BytesIO(img_bytes))
 
         split_tup = os.path.splitext(image.filename)
+        file_name = split_tup[0]
         file_extension = split_tup[1]
 
         # tmp_savename = f"tmp/{image.filename}"
@@ -83,13 +85,19 @@ def detect_image():
         result_vals = json.loads(results.pandas().xyxy[0].to_json(orient="records"))
         print("done")
 
+        # img_oldname = os.path.join(os.getcwd(), "static", image.filename)
+        img_newfilename = file_name  + str(uuid.uuid4()) + file_extension
+        img_newfilepath = os.path.join(os.getcwd(), "static", img_newfilename )
+        # os.rename(img_oldname, img_newname)
 
-        img_savename_backslash = os.path.join(os.getcwd(), "static", image.filename)
+
+        # img_savename_backslash = os.path.join(os.getcwd(), "static", image.filename)
+        img_savename_backslash = img_newfilepath
         img_savename = img_savename_backslash.replace("\\", "/")
 
 
 
-        Image.fromarray(results.ims[0]).save(img_savename)
+        Image.fromarray(results.ims[0]).save(img_newfilepath)
 
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -97,7 +105,7 @@ def detect_image():
         conn = mysql.connect()
         cursor = conn.cursor()
 
-        sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), img_savename, file_size, file_extension, image.filename, image.filename)
+        sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), img_savename, file_size, file_extension, image.filename, img_newfilename)
         cursor.execute(sql)
         data = cursor.fetchall()
 
@@ -134,6 +142,7 @@ def detect_video():
     video = request.files['video']
 
     split_tup = os.path.splitext(video.filename)
+    file_name = split_tup[0]
     file_extension = split_tup[1]
 
     
@@ -145,12 +154,22 @@ def detect_video():
         subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'privacy_yolov5_v3.pt'], shell=True)
 
         # return os.path.join(uploads_dir, secure_filename(video.filename))
+
+
+        vid_oldname = os.path.join(os.getcwd(), "static", video.filename)
+        vid_newfilename = file_name  + str(uuid.uuid4()) + file_extension
+        vid_newfilepath = os.path.join(os.getcwd(), "static", vid_newfilename )
+        os.rename(vid_oldname, vid_newfilepath)
+
+        
         obj = secure_filename(video.filename)
-        vid_bytes = video.read()
+        video_temp = open(vid_newfilepath, 'rb')
+        vid_bytes = video_temp.read()
+        
         file_size = len(vid_bytes)
 
         # return obj
-        video_path = os.path.join(os.getcwd(), "static", obj)
+        video_path = vid_newfilepath
         video_info = open("video_info.log", 'r')
         video_info_data = video_info.read()
         print('file read', video_info.read())
@@ -187,7 +206,7 @@ def detect_video():
         current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
         #vid_savename = f"static/{video.filename}"
-        vid_savename_backslash = os.path.join(os.getcwd(), "static", video.filename)
+        vid_savename_backslash = vid_newfilepath
         vid_savename = vid_savename_backslash.replace("\\", "/")
 
 
@@ -195,7 +214,7 @@ def detect_video():
         conn = mysql.connect()
         cursor = conn.cursor()
 
-        sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, video.filename, video.filename)
+        sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, video.filename, vid_newfilename)
         cursor.execute(sql)
         data = cursor.fetchall()
 
@@ -279,7 +298,15 @@ def opencam():
     time.sleep(1)
 
 
-    video = open((os.path.join(os.getcwd(), "static", "0.mp4")), 'rb')
+    # video = open((os.path.join(os.getcwd(), "static", "0.mp4")), 'rb')
+
+
+    vid_oldname = os.path.join(os.getcwd(), "static", "0.mp4")
+    vid_newfilename = "realtime_"  + str(uuid.uuid4()) + ".mp4"
+    vid_newfilepath = os.path.join(os.getcwd(), "static", vid_newfilename )
+    os.rename(vid_oldname, vid_newfilepath)
+
+    video = open(vid_newfilepath, 'rb')
 
     # split_tup = os.path.splitext(video.filename)
     file_extension = "mp4"
@@ -303,7 +330,7 @@ def opencam():
         values = line.split(',')
         result.append(dict(zip(keys, values)))
 
-    new_data = {"absolute_path": os.path.join(os.getcwd(), "static", "0.mp4")}
+    new_data = {"absolute_path": vid_newfilepath}
 
 
     result.insert(0, new_data)
@@ -315,14 +342,14 @@ def opencam():
     current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
     # vid_savename = f"static/0.mp4"
-    vid_savename_backslash = os.path.join(os.getcwd(), "static", "0.mp4")
+    vid_savename_backslash = vid_newfilepath
     vid_savename = vid_savename_backslash.replace("\\", "/")
 
 
     conn = mysql.connect()
     cursor = conn.cursor()
 
-    sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, "0.mp4", "0.mp4")
+    sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, "0.mp4", vid_newfilename)
     cursor.execute(sql)
     data = cursor.fetchall()
 
