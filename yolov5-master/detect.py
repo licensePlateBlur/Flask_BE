@@ -144,6 +144,8 @@ def run(
 
     #time counting
     time_cnt = 0
+    time_info = [[]]*180
+    time_set = set()
 
     # Run inference
     model.warmup(imgsz=(1 if pt or model.triton else bs, 3, *imgsz))  # warmup
@@ -196,6 +198,8 @@ def run(
                     n = (det[:, 5] == c).sum()  # detections per class
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)} / "  # add to string 클래스 정보 출력하는 부분
                     # class_info += f"{n} {names[int(c)]}{'s' * (n > 1)}, "
+                    #frame 당 탐지된 객체 정보 저장
+                    time_set.add(names[int(c)])
 
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
@@ -309,7 +313,10 @@ def run(
 
         # time_cnt : 초 단위 변수            
         if frame % int(fps) == 0:
+            time_info[time_cnt] = list(time_set)
+            print(''.join(map(str,time_info[time_cnt]))+str(time_cnt)+'초에 탐지된 것들\n')
             time_cnt += 1
+            time_set.clear()
 
         s += ", "
         s += str(time_cnt)
