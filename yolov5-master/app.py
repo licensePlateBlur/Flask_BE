@@ -224,7 +224,7 @@ def detect_video():
             # return os.path.join(uploads_dir, secure_filename(video.filename))
 
 
-            vid_originalpath = os.path.join(os.getcwd(), "static", video.filename)
+            vid_originalpath = os.path.join(uploads_dir, video.filename)
             vid_newfilename = file_name  + str(uuid.uuid4()) + file_extension
             new_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], vid_newfilename))
             shutil.copyfile(vid_originalpath, new_path)
@@ -268,19 +268,21 @@ def detect_video():
                 values = line.split(',')
                 result.append(dict(zip(keys, values)))
 
-            new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
-            # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
-            result.insert(0, new_data)
+            
 
-            json_string = json.dumps(result)
+            # json_string = json.dumps(result)
                 
-            print(json_string)
+            # print(json_string)
 
             
 
             #vid_savename = f"static/{video.filename}"
             vid_savename_backslash = vid_newfilepath
             vid_savename = vid_savename_backslash.replace("\\", "/")
+
+            new_data = {"absolute_path": vid_newfilepath}
+            # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
+            result.insert(0, new_data)
 
 
 
@@ -299,6 +301,46 @@ def detect_video():
             conn.commit()
             cursor.close()
             conn.close()
+
+
+            #############################################
+
+            conn.connect()
+            cursor = conn.cursor()
+
+            query = "SELECT ID FROM process_info ORDER BY ID DESC LIMIT 1"
+
+            cursor.execute(query)
+            result_dbs = cursor.fetchall()
+
+            for data in result_dbs:
+                print("DB에서 가져온 ID 값")
+                print(data.values())
+                print(data)
+                video_id = data['ID']
+                # video_id = data[0]
+
+            cursor.close()
+            conn.close()
+
+
+
+            id_data = {"video_id": video_id}
+            # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
+            result.insert(0, id_data)
+
+
+            video_json_file = open("sample.json")
+            video_json = json.load(video_json_file)
+
+
+            result.append(list(video_json))
+
+            json_string = json.dumps(result)
+                
+            print(json_string)
+
+
 
             # if not data:
             #  conn.commit()
