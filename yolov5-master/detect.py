@@ -1,4 +1,4 @@
-# YOLOv5 🚀 by Ultralytics, GPL-3.0 license
+# YOLOv5 🚀 by Ultralytics, AGPL-3.0 license
 """
 Run YOLOv5 detection inference on images, videos, directories, globs, YouTube, webcam, streams, etc.
 
@@ -33,36 +33,9 @@ import os
 import platform
 import sys
 from pathlib import Path
-import sys
-import re
-sys.path.insert(0, './yolov5')
+import json
 
 import torch
-
-from logging.config import dictConfig
-import logging
-
-dictConfig({
-    'version': 1,
-    'formatters': {
-        'default': {
-            'format': '%(message)s',
-        }
-    },
-    'handlers': {
-        'file': {
-            'level': 'INFO',
-            'class': 'logging.FileHandler',
-            'filename': 'video_info.log',
-            'formatter': 'default',
-            'mode': 'w+'
-        },
-    },
-    'root': {
-        'level': 'INFO',
-        'handlers': ['file']
-    }
-})
 
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
@@ -76,8 +49,6 @@ from utils.general import (LOGGER, Profile, check_file, check_img_size, check_im
                            increment_path, non_max_suppression, print_args, scale_boxes, strip_optimizer, xyxy2xywh)
 from utils.plots import Annotator, colors, save_one_box
 from utils.torch_utils import select_device, smart_inference_mode
-
-logger = logging.getLogger
 
 
 @smart_inference_mode()
@@ -100,10 +71,9 @@ def run(
         augment=False,  # augmented inference
         visualize=False,  # visualize features
         update=False,  # update all models
-        # project=ROOT / 'runs/detect',  # save results to project/name
-        project='static',  # save results to project/name
-        name='',  # save results to project/name
-        exist_ok=True,  # existing project/name ok, do not increment
+        project=ROOT / 'runs/detect',  # save results to project/name
+        name='exp',  # save results to project/name
+        exist_ok=False,  # existing project/name ok, do not increment
         line_thickness=3,  # bounding box thickness (pixels)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
@@ -141,7 +111,7 @@ def run(
     else:
         dataset = LoadImages(source, img_size=imgsz, stride=stride, auto=pt, vid_stride=vid_stride)
     vid_path, vid_writer = [None] * bs, [None] * bs
-
+    
     #time counting
     time_cnt = 0
     time_info = [[]]*180
@@ -171,6 +141,7 @@ def run(
         # pred = utils.general.apply_classifier(pred, classifier_model, im, im0s)
 
         # Process predictions
+        
         for i, det in enumerate(pred):  # per image
             seen += 1
             if webcam:  # batch_size >= 1
@@ -181,8 +152,8 @@ def run(
 
             p = Path(p)  # to Path
             save_path = str(save_dir / p.name)  # im.jpg
-            txt_path = str(save_dir / 'labels' / p.stem) + (', ' if dataset.mode == 'image' else f'_{frame},')  # im.txt
-            # s += '%gx%g ' % im.shape[2:]  # print string 해상도 출력하는 부분
+            txt_path = str(save_dir / 'labels' / p.stem) + ('' if dataset.mode == 'image' else f'_{frame}')  # im.txt
+            s += '%gx%g ' % im.shape[2:]  # print string
             gn = torch.tensor(im0.shape)[[1, 0, 1, 0]]  # normalization gain whwh
             imc = im0.copy() if save_crop else im0  # for save_crop
             annotator = Annotator(im0, line_width=line_thickness, example=str(names))
@@ -190,14 +161,13 @@ def run(
                 # Rescale boxes from img_size to im0 size
                 det[:, :4] = scale_boxes(im.shape[2:], det[:, :4], im0.shape).round()
 
-                s.rstrip()
-                s += ', '
+                # time_info set
+                
 
                 # Print results
                 for c in det[:, 5].unique():
                     n = (det[:, 5] == c).sum()  # detections per class
-                    s += f"{n} {names[int(c)]}{'s' * (n > 1)} / "  # add to string 클래스 정보 출력하는 부분
-                    # class_info += f"{n} {names[int(c)]}{'s' * (n > 1)}, "
+                    s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
                     #frame 당 탐지된 객체 정보 저장
                     time_set.add(names[int(c)])
 
@@ -210,71 +180,9 @@ def run(
                             f.write(('%g ' * len(line)).rstrip() % line + '\n')
 
                     if save_img or save_crop or view_img:  # Add bbox to image
-
-
-                        xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
-                        line = (cls, *xywh, conf) if save_conf else (cls, *xywh)  # label format
-                        #with open(f'{txt_path}.txt', 'w') as f:
-                            #f.write(('%g ' * len(line)).rstrip() % line + '\n')
-
-
-
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                        #annotator.box_label(xyxy, label, color=colors(c, True))
-
-                        if 'vehicle' in label:
-                            continue
-
-                        if '0' in label:
-
-                            x1 = int(xyxy[0].item())
-                            y1 = int(xyxy[1].item())
-                            x2 = int(xyxy[2].item())
-                            y2 = int(xyxy[3].item())
-                            roi = im0[y1:y2, x1:x2]
-                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
-
-                            im0[y1:y2, x1:x2] = blur
-                            
-                        if 'Mobile phone' in label:
-
-                            x1 = int(xyxy[0].item())
-                            y1 = int(xyxy[1].item())
-                            x2 = int(xyxy[2].item())
-                            y2 = int(xyxy[3].item())
-                            roi = im0[y1:y2, x1:x2]
-                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
-
-                            im0[y1:y2, x1:x2] = blur
-
-
-                        if 'card' in label:
-
-                            x1 = int(xyxy[0].item())
-                            y1 = int(xyxy[1].item())
-                            x2 = int(xyxy[2].item())
-                            y2 = int(xyxy[3].item())
-                            roi = im0[y1:y2, x1:x2]
-                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
-
-                            im0[y1:y2, x1:x2] = blur
-
-
-
-                        if 'license-plate' in label:
-
-                            x1 = int(xyxy[0].item())
-                            y1 = int(xyxy[1].item())
-                            x2 = int(xyxy[2].item())
-                            y2 = int(xyxy[3].item())
-                            roi = im0[y1:y2, x1:x2]
-                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
-
-                            im0[y1:y2, x1:x2] = blur
-
-
-
+                        annotator.box_label(xyxy, label, color=colors(c, True))
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
@@ -298,52 +206,41 @@ def run(
                         if isinstance(vid_writer[i], cv2.VideoWriter):
                             vid_writer[i].release()  # release previous video writer
                         if vid_cap:  # video
-                            fps = vid_cap.get(cv2.CAP_PROP_FPS)
+                            fps = vid_cap.get(cv2.CAP_PROP_FPS) #프레임 초당 프레임 수 읽어옴. 출력해보니까 고정값이 출력됨. 
                             w = int(vid_cap.get(cv2.CAP_PROP_FRAME_WIDTH))
                             h = int(vid_cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                            
                         else:  # stream
                             fps, w, h = 30, im0.shape[1], im0.shape[0]
                         save_path = str(Path(save_path).with_suffix('.mp4'))  # force *.mp4 suffix on results videos
                         vid_writer[i] = cv2.VideoWriter(save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, (w, h))
                     vid_writer[i].write(im0)
+        
+    
 
-
-
-
-
-        # time_cnt : 초 단위 변수            
+        
         if frame % int(fps) == 0:
             time_info[time_cnt] = list(time_set)
-            print(''.join(map(str,time_info[time_cnt]))+str(time_cnt)+'초에 탐지된 것들\n')
+            print('\n\n',time_cnt, '초에 탐지된 것들 :', time_info[time_cnt],'\n\n')
             time_cnt += 1
             time_set.clear()
 
-        s += ", "
-        s += str(time_cnt)
-        s += " second"
-
-
-
-       
         # Print time (inference-only)
-        # seperator = ':'
-        # s = seperator.join(s.split(seperator)[2:])
+        LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms  {time_cnt} second")
+    # Video results to json file
+    lst = []
+    # for i in range(len(time_info)):
+    for i in range(time_cnt):
+        video_data = {}
+        className = ' / '.join(map(str,time_info[i])) + ' /'
+        video_data[" class"] = className
+        video_data["time"] = str(i)+' second'
+        lst.append(video_data)
 
-        #s = re.sub(r'C',r':', s)
+    json_path = "./sample.json"
+    with open(json_path,'w') as outfile:
+        json.dump(lst,outfile)
 
-        if webcam != 1:
-            s_root = s.split('C')[0]
-            s_ext = s.split(':', 2)[2]
-            s = s_root + s_ext
-            s.replace(')', '), ')
-
-        if dataset.mode == 'image':
-            LOGGER.info(xyxy[0])
-        else:
-            LOGGER.info(f"{s}{',' if len(det) else ', (no detections), '}{dt[1].dt * 1E3:.1f}ms")
-            logging.info(f"{s}{', ' if len(det) else ', (no detections), '}{dt[1].dt * 1E3:.1f}ms")
-            #LOGGER.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
-            #logging.info(f"{s}{'' if len(det) else '(no detections), '}{dt[1].dt * 1E3:.1f}ms")
 
     # Print results
     t = tuple(x.t / seen * 1E3 for x in dt)  # speeds per image
@@ -351,6 +248,8 @@ def run(
     if save_txt or save_img:
         s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
         LOGGER.info(f"Results saved to {colorstr('bold', save_dir)}{s}")
+        # for t in range(len(time_info)):
+        #     print(t, '초: ', time_info[t])
     if update:
         strip_optimizer(weights[0])  # update model (to fix SourceChangeWarning)
 
@@ -375,10 +274,9 @@ def parse_opt():
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--visualize', action='store_true', help='visualize features')
     parser.add_argument('--update', action='store_true', help='update all models')
-    # parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
-    parser.add_argument('--project', default='static', help='save results to project/name')
-    # parser.add_argument('--name', default='exp', help='save results to project/name')
-    parser.add_argument('--exist-ok', default=True, action='store_true', help='existing project/name ok, do not increment')
+    parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
+    parser.add_argument('--name', default='exp', help='save results to project/name')
+    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')
