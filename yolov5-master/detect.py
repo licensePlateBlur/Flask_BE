@@ -71,9 +71,10 @@ def run(
         augment=False,  # augmented inference
         visualize=False,  # visualize features
         update=False,  # update all models
-        project=ROOT / 'runs/detect',  # save results to project/name
-        name='exp',  # save results to project/name
-        exist_ok=False,  # existing project/name ok, do not increment
+        # project=ROOT / 'runs/detect',  # save results to project/name
+        project='static', # save results to project/name
+        name='',  # save results to project/name
+        exist_ok=True,  # existing project/name ok, do not increment
         line_thickness=3,  # bounding box thickness (pixels)
         hide_labels=False,  # hide labels
         hide_conf=False,  # hide confidences
@@ -182,7 +183,59 @@ def run(
                     if save_img or save_crop or view_img:  # Add bbox to image
                         c = int(cls)  # integer class
                         label = None if hide_labels else (names[c] if hide_conf else f'{names[c]} {conf:.2f}')
-                        annotator.box_label(xyxy, label, color=colors(c, True))
+                        # annotator.box_label(xyxy, label, color=colors(c, True))
+
+                        if 'vehicle' in label:
+                            continue
+
+                        if '0' in label:
+
+                            x1 = int(xyxy[0].item())
+                            y1 = int(xyxy[1].item())
+                            x2 = int(xyxy[2].item())
+                            y2 = int(xyxy[3].item())
+                            roi = im0[y1:y2, x1:x2]
+                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
+
+                            im0[y1:y2, x1:x2] = blur
+                            
+                        if 'Mobile phone' in label:
+
+                            x1 = int(xyxy[0].item())
+                            y1 = int(xyxy[1].item())
+                            x2 = int(xyxy[2].item())
+                            y2 = int(xyxy[3].item())
+                            roi = im0[y1:y2, x1:x2]
+                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
+
+                            im0[y1:y2, x1:x2] = blur
+
+
+                        if 'card' in label:
+
+                            x1 = int(xyxy[0].item())
+                            y1 = int(xyxy[1].item())
+                            x2 = int(xyxy[2].item())
+                            y2 = int(xyxy[3].item())
+                            roi = im0[y1:y2, x1:x2]
+                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
+
+                            im0[y1:y2, x1:x2] = blur
+
+
+
+                        if 'license-plate' in label:
+
+                            x1 = int(xyxy[0].item())
+                            y1 = int(xyxy[1].item())
+                            x2 = int(xyxy[2].item())
+                            y2 = int(xyxy[3].item())
+                            roi = im0[y1:y2, x1:x2]
+                            blur = cv2.GaussianBlur(roi, (51, 51), 50)
+
+                            im0[y1:y2, x1:x2] = blur
+
+
                     if save_crop:
                         save_one_box(xyxy, imc, file=save_dir / 'crops' / names[c] / f'{p.stem}.jpg', BGR=True)
 
@@ -274,9 +327,10 @@ def parse_opt():
     parser.add_argument('--augment', action='store_true', help='augmented inference')
     parser.add_argument('--visualize', action='store_true', help='visualize features')
     parser.add_argument('--update', action='store_true', help='update all models')
-    parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
-    parser.add_argument('--name', default='exp', help='save results to project/name')
-    parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
+    # parser.add_argument('--project', default=ROOT / 'runs/detect', help='save results to project/name')
+    parser.add_argument('--project', default='static', help='save results to project/name')
+    # parser.add_argument('--name', default='exp', help='save results to project/name')
+    parser.add_argument('--exist-ok', default=True, action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--line-thickness', default=3, type=int, help='bounding box thickness (pixels)')
     parser.add_argument('--hide-labels', default=False, action='store_true', help='hide labels')
     parser.add_argument('--hide-conf', default=False, action='store_true', help='hide confidences')

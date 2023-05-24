@@ -140,18 +140,18 @@ def detect_image():
 
 
             # conn = mysql.connect()
-            conn.connect()
-            cursor = conn.cursor()
+            # conn.connect()
+            # cursor = conn.cursor()
 
             # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(create_date), img_newfilepath, file_size, file_extension, image.filename, img_newfilename)
-            query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (create_date, img_newfilepath, file_size, file_extension, image.filename, img_newfilename))
+            # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+            # cursor.execute(query, (create_date, img_newfilepath, file_size, file_extension, image.filename, img_newfilename))
             #cursor.execute(sql)
             # data = cursor.fetchall()
 
-            conn.commit()
-            cursor.close()
-            conn.close()
+            # conn.commit()
+            # cursor.close()
+            # conn.close()
 
             # if not data:
             #     conn.commit()
