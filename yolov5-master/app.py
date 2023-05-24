@@ -28,13 +28,20 @@ CORS(app)
 # mysql.init_app(app)
 
 # uploads_dir = os.path.join(app.instance_path, 'uploads')
-uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
+# uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
+uploads_dir = 'C:/Users/82103/Desktop/blindupload'  # 절대경로
 
-
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'root'
+app.config['MYSQL_USER'] = 'kwonsungmin'
+app.config['MYSQL_PASSWORD'] = "1234"
 app.config['MYSQL_DB'] = 'privacy'
-app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_HOST'] = '192.168.100.3'
+app.config['MYSQL_PORT'] = 4567
+
+
+# app.config['MYSQL_USER'] = 'root'
+# app.config['MYSQL_PASSWORD'] = 'root'
+# app.config['MYSQL_DB'] = 'privacy'
+# app.config['MYSQL_HOST'] = 'localhost'
 app.config['UPLOAD_FOLDER'] = uploads_dir
 app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'jpg', 'jpeg', 'gif'}  # 허용된 파일 확장자 목록
 app.secret_key = "root"
@@ -43,7 +50,7 @@ os.makedirs(uploads_dir, exist_ok=True)
 
 conn = pymysql.connect(
     host=app.config['MYSQL_HOST'],
-    # port = app.config['MYSQL_PORT'],
+    port = app.config['MYSQL_PORT'],
     user = app.config['MYSQL_USER'],
     password = app.config['MYSQL_PASSWORD'],
     db = app.config['MYSQL_DB'],
@@ -140,18 +147,19 @@ def detect_image():
 
 
             # conn = mysql.connect()
-            conn.connect()
-            cursor = conn.cursor()
 
-            # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(create_date), img_newfilepath, file_size, file_extension, image.filename, img_newfilename)
-            query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (create_date, img_newfilepath, file_size, file_extension, image.filename, img_newfilename))
-            #cursor.execute(sql)
-            # data = cursor.fetchall()
+            # conn.connect()
+            # cursor = conn.cursor()
 
-            conn.commit()
-            cursor.close()
-            conn.close()
+            # # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(create_date), img_newfilepath, file_size, file_extension, image.filename, img_newfilename)
+            # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+            # cursor.execute(query, (create_date, img_newfilepath, file_size, file_extension, image.filename, img_newfilename))
+            # #cursor.execute(sql)
+            # # data = cursor.fetchall()
+
+            # conn.commit()
+            # cursor.close()
+            # conn.close()
 
             # if not data:
             #     conn.commit()
@@ -283,7 +291,7 @@ def detect_video():
             # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, video.filename, vid_newfilename)
             # cursor.execute(sql)
 
-            query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+            query = "INSERT INTO process_info (CREATE_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILENAME, STORED_FILENAME) VALUES (%s, %s, %s, %s, %s, %s)"
             cursor.execute(query, (create_date, vid_newfilepath, file_size, file_extension, video.filename, vid_newfilename))
 
             # data = cursor.fetchall()
