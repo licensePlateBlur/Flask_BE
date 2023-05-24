@@ -216,7 +216,9 @@ def detect_video():
             # return os.path.join(uploads_dir, secure_filename(video.filename))
 
 
-            vid_originalpath = os.path.join(uploads_dir, video.filename)
+            # vid_originalpath = os.path.join(uploads_dir, video.filename)
+
+            vid_originalpath = os.path.join(os.getcwd(), "static", video.filename)
             vid_newfilename = file_name  + str(uuid.uuid4()) + file_extension
             new_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], vid_newfilename))
             shutil.copyfile(vid_originalpath, new_path)
