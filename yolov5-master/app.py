@@ -195,7 +195,7 @@ def detect_video():
 
     if request.method == 'POST':
         if 'video' not in request.files:
-            return '첨부된 이미지가 없습니다.'
+            return '첨부된 동영상이 없습니다.'
         
         video = request.files['video']
 
@@ -213,10 +213,9 @@ def detect_video():
 
             mimetype = video.mimetype
 
-    
 
         if video.filename.endswith('.mp4') or video.filename.endswith('.avi'):
-            # video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
+            video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
             # print(video)
             subprocess.run("dir", shell=True)
             subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'privacy_yolov5_v4.pt'], shell=True)
@@ -225,11 +224,12 @@ def detect_video():
 
 
             # vid_originalpath = os.path.join(uploads_dir, video.filename)
-
             vid_originalpath = os.path.join(os.getcwd(), "static", video.filename)
             vid_newfilename = file_name  + str(uuid.uuid4()) + file_extension
+
             new_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], vid_newfilename))
             shutil.copyfile(vid_originalpath, new_path)
+            
 
             # vid_newfilepath = os.path.join(os.getcwd(), "static", vid_newfilename )
             vid_newfilepath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], vid_newfilename))
@@ -294,9 +294,8 @@ def detect_video():
 
             # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, video.filename, vid_newfilename)
             # cursor.execute(sql)
-
-            query = "INSERT INTO process_info (CREATE_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILENAME, STORED_FILENAME) VALUES (%s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (create_date, vid_newfilepath, file_size, file_extension, video.filename, vid_newfilename))
+            query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+            cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, video.filename, vid_newfilename))
 
             # data = cursor.fetchall()
 
@@ -367,7 +366,7 @@ def detect_video():
 
 
 
-@app.route("/detect_realtime", methods=['GET', 'POST'])
+@app.route("python/detect_realtime", methods=['GET', 'POST'])
 def detect_realtime():
    
     print("detect activated")
@@ -510,7 +509,7 @@ def opencam():
     # return "done"
 
 
-@app.route('/download/<int:file_id>', methods=['GET'])
+@app.route('/python/download/<int:file_id>', methods=['GET'])
 def download(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -533,7 +532,7 @@ def download(file_id):
     return 'File not found', 404
 
 
-@app.route('/image/<int:file_id>', methods=['GET'])
+@app.route('/python/image/<int:file_id>', methods=['GET'])
 def get_uploaded_file(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -546,6 +545,7 @@ def get_uploaded_file(file_id):
     if result:
         # 파일 경로 생성
         filepath = result['FILE_PATH']
+        print(result['FILE_TYPE'])
         storedfilepath = result['STORED_FILE_NAME']
 
         # 파일 경로 전달 //절대경로
@@ -555,7 +555,7 @@ def get_uploaded_file(file_id):
 
 
 
-@app.route('/files', methods=['GET'])
+@app.route('/python/files', methods=['GET'])
 def get_data():
     try:
         conn.connect()
