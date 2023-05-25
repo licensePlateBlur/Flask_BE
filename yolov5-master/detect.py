@@ -286,7 +286,7 @@ def run(
     for i in range(time_cnt):
         video_data = {}
         className = ' / '.join(map(str,time_info[i])) + ' /'
-        video_data[" class"] = className
+        video_data["class"] = className
         video_data["time"] = str(i)+' second'
         lst.append(video_data)
 
