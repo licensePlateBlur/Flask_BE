@@ -364,7 +364,7 @@ def detect_video():
 
 
 
-@app.route("/deprecated/detect_realtime", methods=['GET', 'POST'])
+@app.route("/python/deprecated/detect_realtime", methods=['GET', 'POST'])
 def detect_realtime():
    
     print("detect activated")
@@ -450,6 +450,8 @@ def opencam():
     vid_bytes = video.read()
     file_size = len(vid_bytes)
 
+
+
     video_path = os.path.join(os.getcwd(), "static", "0.mp4")
     video_info = open("video_info.log", 'r')
     video_info_data = video_info.read()
@@ -469,6 +471,12 @@ def opencam():
 
 
     result.insert(0, new_data)
+
+    video_json_file = open("sample.json")
+    video_json = json.load(video_json_file)
+
+
+    result.append(list(video_json))
 
     json_string = json.dumps(result)
                 
