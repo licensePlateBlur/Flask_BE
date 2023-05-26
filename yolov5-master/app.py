@@ -371,7 +371,7 @@ def detect_video():
 
 
 
-@app.route("/python/detect_realtime", methods=['GET', 'POST'])
+@app.route("/python/deprecated/detect_realtime", methods=['GET', 'POST'])
 def detect_realtime():
    
     print("detect activated")
@@ -426,7 +426,7 @@ def detect_realtime():
         
     #return os.path.join(uploads_dir, secure_filename(video.filename)), obj
 
-@app.route("/opencam", methods=['GET', 'POST'])
+@app.route("/python/detect_realtime", methods=['GET', 'POST'])
 def opencam():
     print("here")
     subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v4.pt', '--source', '0'], shell=True)
@@ -447,6 +447,8 @@ def opencam():
     # os.rename(vid_oldname, vid_newfilepath)
 
     video = open(vid_newfilepath, 'rb')
+    mimetype = "video/mp4"
+
 
     # split_tup = os.path.splitext(video.filename)
     file_extension = "mp4"
@@ -494,7 +496,7 @@ def opencam():
     # cursor.execute(sql)
 
     query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
-    cursor.execute(query, (create_date, vid_newfilepath, file_size, file_extension, video.filename, vid_newfilename))
+    cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, "0.mp4", vid_newfilename))
 
     # data = cursor.fetchall()
 
