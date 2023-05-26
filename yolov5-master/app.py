@@ -367,7 +367,7 @@ def detect_video():
 
 
 
-@app.route("python/detect_realtime", methods=['GET', 'POST'])
+@app.route("/python/detect_realtime", methods=['GET', 'POST'])
 def detect_realtime():
    
     print("detect activated")
