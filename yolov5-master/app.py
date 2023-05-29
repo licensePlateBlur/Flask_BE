@@ -3,6 +3,8 @@ from flask import Flask, render_template, request, redirect, send_file, url_for,
 from werkzeug.utils import secure_filename, send_from_directory
 import os
 import subprocess
+from PIL import ImageFile
+ImageFile.LOAD_TRUNCATED_IMAGES = True
 from PIL import Image
 import io
 import sys
@@ -115,7 +117,7 @@ def detect_image():
             obj = secure_filename(img.filename)
             video_path = os.path.join(os.getcwd(), "static", obj)
             # model = torch.hub.load('yolov5', 'yolov5s', pretrained=True, source='local')  # force_reload = recache latest code
-            model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v4', source='local')  # force_reload = recache latest code
+            model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v5', source='local')  # force_reload = recache latest code
             model.eval()
             results = model([img])
             print(results.pandas().xyxy[0].to_json(orient="records"))
@@ -219,7 +221,7 @@ def detect_video():
             video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
             # print(video)
             subprocess.run("dir", shell=True)
-            subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'privacy_yolov5_v4.pt'], shell=True)
+            subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'privacy_yolov5_v5.pt'], shell=True)
 
             # return os.path.join(uploads_dir, secure_filename(video.filename))
 
@@ -380,7 +382,7 @@ def detect_realtime():
     video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
     print(video)
     subprocess.run("dir", shell=True)
-    subprocess.run(['python', 'detect.py', '--source', '0', '--weights', 'privacy_yolov5_v4.pt'], shell=True)
+    subprocess.run(['python', 'detect.py', '--source', '0', '--weights', 'privacy_yolov5_v5.pt'], shell=True)
 
     # return os.path.join(uploads_dir, secure_filename(video.filename))
     obj = secure_filename(video.filename)
@@ -429,7 +431,7 @@ def detect_realtime():
 @app.route("/python/detect_realtime", methods=['GET', 'POST'])
 def opencam():
     print("here")
-    subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v4.pt', '--source', '0'], shell=True)
+    subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v5.pt', '--source', '0'], shell=True)
 
     time.sleep(1)
 
@@ -457,6 +459,8 @@ def opencam():
     vid_bytes = video.read()
     file_size = len(vid_bytes)
 
+
+
     video_path = os.path.join(os.getcwd(), "static", "0.mp4")
     video_info = open("video_info.log", 'r')
     video_info_data = video_info.read()
@@ -477,9 +481,13 @@ def opencam():
 
     result.insert(0, new_data)
 
-    json_string = json.dumps(result)
-                
-    print(json_string)
+    video_json_file = open("sample.json")
+    video_json = json.load(video_json_file)
+
+
+    result.append(list(video_json))
+
+    
 
     create_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
@@ -504,12 +512,43 @@ def opencam():
     cursor.close()
     conn.close()
 
+    #################################################################
+
+    conn.connect()
+    cursor = conn.cursor()
+
+    query = "SELECT ID FROM process_info ORDER BY ID DESC LIMIT 1"
+
+    cursor.execute(query)
+    result_dbs = cursor.fetchall()
+
+    for data in result_dbs:
+        print("DB에서 가져온 ID 값")
+        print(data.values())
+        print(data)
+        video_id = data['ID']
+        # video_id = data[0]
+
+    cursor.close()
+    conn.close()
+
+
+
+    id_data = {"video_id": video_id}
+    # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
+    result.insert(0, id_data)
+
+
     # if not data:
     #     conn.commit()
     # else: print ("DB upload failed")
 
     # cursor.close()
     # conn.close()
+
+    json_string = json.dumps(result)
+                
+    print(json_string)
 
     return json_string
 
