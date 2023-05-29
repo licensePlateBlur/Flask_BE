@@ -115,8 +115,15 @@ def detect_image():
             results = model([img])
             print(results.pandas().xyxy[0].to_json(orient="records"))
             # results.render()
-            result_vals=[]
-            result_vals = json.loads(results.pandas().xyxy[0].to_json(orient="records"))
+            result_vals_wVehicle=[]
+            result_vals_wVehicle = json.loads(results.pandas().xyxy[0].to_json(orient="records"))
+
+            for i in range(len(result_vals_wVehicle) -1, -1, -1):
+                if isinstance(result_vals_wVehicle[i], dict) and result_vals_wVehicle[i].get("name") == "vehicle":
+                    del result_vals_wVehicle[i]
+            
+            result_vals = []
+            result_vals = result_vals_wVehicle
             print("done")
 
             # img_oldname = os.path.join(os.getcwd(), "static", image.filename)
@@ -178,7 +185,8 @@ def detect_image():
 
             # return result_vals_quote
             # return result_vals_quote.replace("'", '"')
-            return json.loads(results.pandas().xyxy[0].to_json(orient="records"))
+            # return json.loads(results.pandas().xyxy[0].to_json(orient="records"))
+            return result_vals
         else: 
             return "요청 형식이 올바르지 않습니다."
 
