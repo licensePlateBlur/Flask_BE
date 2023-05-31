@@ -555,8 +555,8 @@ def opencam():
     # return "done"
 
 
-@app.route('/python/download/<int:file_id>', methods=['GET'])
-def download(file_id):
+@app.route('/python/download_video/<int:file_id>', methods=['GET'])
+def download_video(file_id):
     # 파일 정보 조회
     conn.connect()
     with conn.cursor() as cursor:
@@ -578,8 +578,8 @@ def download(file_id):
     return 'File not found', 404
 
 
-@app.route('/python/image/<int:file_id>', methods=['GET'])
-def get_uploaded_file(file_id):
+@app.route('/python/video/<int:file_id>', methods=['GET'])
+def get_video_file(file_id):
     # 파일 정보 조회
     conn.connect()
     with conn.cursor() as cursor:
@@ -601,8 +601,8 @@ def get_uploaded_file(file_id):
 
 
 
-@app.route('/python/files', methods=['GET'])
-def get_data():
+@app.route('/python/video_files', methods=['GET'])
+def get_video_files():
     try:
         conn.connect()
         with conn.cursor() as cursor:
@@ -632,8 +632,109 @@ def return_file():
     except Exception as e:
         return str(e)
 
+@app.route('/python/image_upload', methods=['GET', 'POST'])
+def upload_image_file():
+    if request.method == 'POST':
+        # 파일이 전송되었는지 확인
+        if 'file' not in request.files:
+            return 'No file part'
+        
+        file = request.files['file']
+        
+        # 파일이 비어있는지 확인
+        if file.filename == '':
+            return 'No selected file'
+        
+        # 허용된 확장자인지 확인
+        if file and allowed_file(file.filename):
+            create_date = datetime.datetime.now()
+             # 파일명을 고유한 식별자로 변경
+            filename = str(uuid.uuid4())
+            extension = file.filename.rsplit('.', 1)[1].lower()
+            new_filename = filename + file.filename
+            file_type = file.content_type
+            mimetype = file.mimetype #다운로드 타입이 필요!
+            original_file_name = file.filename
+            stored_file_name = new_filename
+            # 파일 저장 경로 생성
+            file_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
+            file.save(file_path)
+            file_size = os.path.getsize(file_path)
+
+            # # 파일의 절대 경로 생성
+            # file_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], new_filename))
+
+            # 파일 경로를 데이터베이스에 저장
+            conn.connect()
+            cursor = conn.cursor()
+            query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+            cursor.execute(query, (create_date, file_path, file_size, mimetype, original_file_name, stored_file_name))
+            conn.commit()
+            cursor.close()
+            conn.close()
+            
+            return 'File uploaded successfully'
+        
+        return 'Invalid file extension'
+    
+    return "성공"
+@app.route('/python/image_files', methods=['GET'])
+def get_image_files():
+    try:
+        conn.connect()
+        with conn.cursor() as cursor:
+            # 데이터베이스에서 데이터 가져오기
+            sql = "SELECT * FROM file"
+            cursor.execute(sql)
+            data = cursor.fetchall()
+            return jsonify(data)
+    except Exception as e:
+        return str(e)
+    finally:
+        conn.close()
+@app.route('/python/download_image/<int:file_id>', methods=['GET'])
+def download_image(file_id):
+    # 파일 정보 조회
+    conn.connect()
+    with conn.cursor() as cursor:
+        sql = "SELECT * FROM file WHERE id = %s"
+        cursor.execute(sql, file_id)
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+    if result:
+        # 파일 경로 생성
+        print(result)
+        filepath = result['FILE_PATH']
+        storedfilepath = result['STORED_FILE_NAME']
+
+        # 파일 다운로드 //절대경로
+        return send_file(filepath, mimetype=result['FILE_TYPE'],download_name=storedfilepath, as_attachment=True)
+    
+    return 'File not found', 404
 
 
+@app.route('/python/image/<int:file_id>', methods=['GET'])
+def get_image_file(file_id):
+    # 파일 정보 조회
+    conn.connect()
+    with conn.cursor() as cursor:
+        sql = "SELECT * FROM file WHERE id = %s"
+        cursor.execute(sql, file_id)
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+    if result:
+        # 파일 경로 생성
+        filepath = result['FILE_PATH']
+        print(result['FILE_TYPE'])
+        storedfilepath = result['STORED_FILE_NAME']
+
+        # 파일 경로 전달 //절대경로
+        return send_file(filepath, mimetype=result['FILE_TYPE'])
+    
+    return 'File not found', 404
 # @app.route('/display/<filename>')
 # def display_video(filename):
 # 	#print('display_video filename: ' + filename)
