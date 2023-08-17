@@ -699,8 +699,8 @@ def get_image_files():
         conn.connect()
         with conn.cursor() as cursor:
             # 데이터베이스에서 데이터 가져오기
-            # sql = "SELECT * FROM file"
-            sql = "SELECT * FROM file WHERE FILE_TYPE = 'image/jpeg'" # DB 통일로 인한 구분자 조건 추가
+            sql = "SELECT * FROM file"
+            # sql = "SELECT * FROM file WHERE FILE_TYPE = 'image/jpeg'" # DB 통일로 인한 구분자 조건 추가
             cursor.execute(sql)
             data = cursor.fetchall()
             return jsonify(data)

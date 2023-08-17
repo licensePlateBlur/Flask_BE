@@ -136,7 +136,8 @@ def get_data():
         with conn.cursor() as cursor:
             # 데이터베이스에서 데이터 가져오기
             # sql = "SELECT * FROM process_info"
-            sql = "SELECT * FROM file WHERE FILE_TYPE = 'video/mp4'"
+            # sql = "SELECT * FROM file WHERE FILE_TYPE = 'video/mp4'" # 동영상 DB 이름 통일
+            sql = "SELECT * FROM file"
             cursor.execute(sql)
             data = cursor.fetchall()
             return jsonify(data)
