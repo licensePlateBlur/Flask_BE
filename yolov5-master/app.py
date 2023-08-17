@@ -32,19 +32,19 @@ CORS(app)
 
 # uploads_dir = os.path.join(app.instance_path, 'uploads')
 # uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
-uploads_dir = 'C:/Users/82103/Desktop/blindupload'  # 절대경로
+uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
 
-app.config['MYSQL_USER'] = 'kwonsungmin'
-app.config['MYSQL_PASSWORD'] = "1234"
-app.config['MYSQL_DB'] = 'privacy'
-app.config['MYSQL_HOST'] = '192.168.100.3'
-app.config['MYSQL_PORT'] = 4567
-
-
-# app.config['MYSQL_USER'] = 'root'
-# app.config['MYSQL_PASSWORD'] = 'root'
+# app.config['MYSQL_USER'] = 'kwonsungmin'
+# app.config['MYSQL_PASSWORD'] = "1234"
 # app.config['MYSQL_DB'] = 'privacy'
-# app.config['MYSQL_HOST'] = 'localhost'
+# app.config['MYSQL_HOST'] = '192.168.100.3'
+#app.config['MYSQL_PORT'] = 4567
+
+
+app.config['MYSQL_USER'] = 'root'
+app.config['MYSQL_PASSWORD'] = 'root'
+app.config['MYSQL_DB'] = 'privacy'
+app.config['MYSQL_HOST'] = 'localhost'
 app.config['UPLOAD_FOLDER'] = uploads_dir
 app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'jpg', 'jpeg', 'gif'}  # 허용된 파일 확장자 목록
 app.secret_key = "root"
@@ -53,7 +53,7 @@ os.makedirs(uploads_dir, exist_ok=True)
 
 conn = pymysql.connect(
     host=app.config['MYSQL_HOST'],
-    port = app.config['MYSQL_PORT'],
+    # port = app.config['MYSQL_PORT'],
     user = app.config['MYSQL_USER'],
     password = app.config['MYSQL_PASSWORD'],
     db = app.config['MYSQL_DB'],
@@ -117,7 +117,7 @@ def detect_image():
             obj = secure_filename(img.filename)
             video_path = os.path.join(os.getcwd(), "static", obj)
             # model = torch.hub.load('yolov5', 'yolov5s', pretrained=True, source='local')  # force_reload = recache latest code
-            model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v5', source='local')  # force_reload = recache latest code
+            model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v6', source='local')  # force_reload = recache latest code
             model.eval()
             results = model([img])
             print(results.pandas().xyxy[0].to_json(orient="records"))
@@ -181,7 +181,7 @@ def detect_image():
         
             # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
             new_data = {"absolute_path": img_newfilepath}
-            result_vals.insert(0, new_data)
+            # result_vals.insert(0, new_data)
 
             print(str(result_vals))
 
@@ -229,7 +229,7 @@ def detect_video():
             video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
             # print(video)
             subprocess.run("dir", shell=True)
-            subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'privacy_yolov5_v5.pt'], shell=True)
+            subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'privacy_yolov5_v6.pt'], shell=True)
 
             # return os.path.join(uploads_dir, secure_filename(video.filename))
 
@@ -308,7 +308,8 @@ def detect_video():
 
             # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, video.filename, vid_newfilename)
             # cursor.execute(sql)
-            query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+            # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+            query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
             # cursor.execute(query, (create_date, vid_newfilepath, file_size, file_extension, video.filename, vid_newfilename))
             cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, video.filename, vid_newfilename))
 
@@ -324,7 +325,8 @@ def detect_video():
             conn.connect()
             cursor = conn.cursor()
 
-            query = "SELECT ID FROM process_info ORDER BY ID DESC LIMIT 1"
+            # query = "SELECT ID FROM process_info ORDER BY ID DESC LIMIT 1"
+            query = "SELECT ID FROM file ORDER BY ID DESC LIMIT 1" # 동영상 DB 이름 통일
 
             cursor.execute(query)
             result_dbs = cursor.fetchall()
@@ -390,7 +392,7 @@ def detect_realtime():
     video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
     print(video)
     subprocess.run("dir", shell=True)
-    subprocess.run(['python', 'detect.py', '--source', '0', '--weights', 'privacy_yolov5_v5.pt'], shell=True)
+    subprocess.run(['python', 'detect.py', '--source', '0', '--weights', 'privacy_yolov5_v6.pt'], shell=True)
 
     # return os.path.join(uploads_dir, secure_filename(video.filename))
     obj = secure_filename(video.filename)
@@ -439,7 +441,7 @@ def detect_realtime():
 @app.route("/python/detect_realtime", methods=['GET', 'POST'])
 def opencam():
     print("here")
-    subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v5.pt', '--source', '0'], shell=True)
+    subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v6.pt', '--source', '0'], shell=True)
 
     time.sleep(1)
 
@@ -511,7 +513,8 @@ def opencam():
     # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, "0.mp4", vid_newfilename)
     # cursor.execute(sql)
 
-    query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+    # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+    query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
     cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, "0.mp4", vid_newfilename))
 
     # data = cursor.fetchall()
@@ -525,7 +528,8 @@ def opencam():
     conn.connect()
     cursor = conn.cursor()
 
-    query = "SELECT ID FROM process_info ORDER BY ID DESC LIMIT 1"
+    # query = "SELECT ID FROM process_info ORDER BY ID DESC LIMIT 1"
+    query = "SELECT ID FROM file ORDER BY ID DESC LIMIT 1" # 동영상 DB 이름 통일
 
     cursor.execute(query)
     result_dbs = cursor.fetchall()
@@ -568,7 +572,8 @@ def download_video(file_id):
     # 파일 정보 조회
     conn.connect()
     with conn.cursor() as cursor:
-        sql = "SELECT * FROM process_info WHERE id = %s"
+        # sql = "SELECT * FROM process_info WHERE id = %s"
+        sql = "SELECT * FROM file WHERE id = %s" # 동영상 DB 이름 통일
         cursor.execute(sql, file_id)
         result = cursor.fetchone()
         cursor.close()
@@ -591,7 +596,8 @@ def get_video_file(file_id):
     # 파일 정보 조회
     conn.connect()
     with conn.cursor() as cursor:
-        sql = "SELECT * FROM process_info WHERE id = %s"
+        # sql = "SELECT * FROM process_info WHERE id = %s"
+        sql = "SELECT * FROM file WHERE id = %s" # 동영상 DB 이름 통일
         cursor.execute(sql, file_id)
         result = cursor.fetchone()
         cursor.close()
@@ -615,7 +621,8 @@ def get_video_files():
         conn.connect()
         with conn.cursor() as cursor:
             # 데이터베이스에서 데이터 가져오기
-            sql = "SELECT * FROM process_info"
+            # sql = "SELECT * FROM process_info"
+            sql = "SELECT * FROM file WHERE FILE_TYPE = 'video/mp4'" # 동영상 DB 이름 통일
             cursor.execute(sql)
             data = cursor.fetchall()
             return jsonify(data)
@@ -692,7 +699,8 @@ def get_image_files():
         conn.connect()
         with conn.cursor() as cursor:
             # 데이터베이스에서 데이터 가져오기
-            sql = "SELECT * FROM file"
+            # sql = "SELECT * FROM file"
+            sql = "SELECT * FROM file WHERE FILE_TYPE = 'image/jpeg'" # DB 통일로 인한 구분자 조건 추가
             cursor.execute(sql)
             data = cursor.fetchall()
             return jsonify(data)
