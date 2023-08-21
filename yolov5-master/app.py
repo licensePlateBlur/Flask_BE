@@ -567,6 +567,30 @@ def opencam():
     # return "done"
 
 
+@app.route('/python/download_file/<int:file_id>', methods=['GET'])
+def download_file(file_id):
+    # 파일 정보 조회
+    conn.connect()
+    with conn.cursor() as cursor:
+        # sql = "SELECT * FROM process_info WHERE id = %s"
+        sql = "SELECT * FROM file WHERE id = %s" # 동영상 DB 이름 통일
+        cursor.execute(sql, file_id)
+        result = cursor.fetchone()
+        cursor.close()
+        conn.close()
+
+    if result:
+        # 파일 경로 생성
+        print(result)
+        filepath = result['FILE_PATH']
+        storedfilepath = result['STORED_FILE_NAME']
+
+        # 파일 다운로드 //절대경로
+        return send_file(filepath, mimetype=result['FILE_TYPE'],download_name=storedfilepath, as_attachment=True)
+    
+    return 'File not found', 404
+
+
 @app.route('/python/download_video/<int:file_id>', methods=['GET'])
 def download_video(file_id):
     # 파일 정보 조회
@@ -693,7 +717,8 @@ def upload_image_file():
         return 'Invalid file extension'
     
     return "성공"
-@app.route('/python/image_files', methods=['GET'])
+# @app.route('/python/image_files', methods=['GET'])
+@app.route('/python/files', methods=['GET'])
 def get_image_files():
     try:
         conn.connect()
