@@ -38,13 +38,14 @@ uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
 # app.config['MYSQL_PASSWORD'] = "1234"
 # app.config['MYSQL_DB'] = 'privacy'
 # app.config['MYSQL_HOST'] = '192.168.100.3'
-#app.config['MYSQL_PORT'] = 4567
+# app.config['MYSQL_PORT'] = 4567
 
 
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'root'
 app.config['MYSQL_DB'] = 'privacy'
 app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_PORT'] = 3306
 app.config['UPLOAD_FOLDER'] = uploads_dir
 app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'jpg', 'jpeg', 'gif'}  # 허용된 파일 확장자 목록
 app.secret_key = "root"
@@ -64,8 +65,8 @@ conn = pymysql.connect(
 # model = torch.hub.load('yolov5', 'privacyV4', pretrained=True, source='local')  # force_reload = recache latest code
 
 
-
-
+print(pymysql.__version__)
+# print(Flask.__version__)
 @app.route("/", methods=['GET', 'POST'])
 def hello_world():
     print("연결 성공")
