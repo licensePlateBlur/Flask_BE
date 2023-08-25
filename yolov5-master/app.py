@@ -32,8 +32,7 @@ CORS(app)
 
 # uploads_dir = os.path.join(app.instance_path, 'uploads')
 # uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
-uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
-
+uploads_dir = 'C:/Users/82103/Desktop/blindupload'  # 절대경로
 # app.config['MYSQL_USER'] = 'kwonsungmin'
 # app.config['MYSQL_PASSWORD'] = "1234"
 # app.config['MYSQL_DB'] = 'privacy'
@@ -694,13 +693,18 @@ def upload_image_file():
         return 'Invalid file extension'
     
     return "성공"
-@app.route('/python/image_files', methods=['GET'])
+@app.route('/python/files', methods=['GET'])
 def get_image_files():
     try:
         conn.connect()
         with conn.cursor() as cursor:
             # 데이터베이스에서 데이터 가져오기
-            sql = "SELECT * FROM file"
+            page = int(request.args.get('page', 1))  # 기본값 1
+            per_page = 20
+            
+            offset = (page - 1) * per_page
+
+            sql = f"SELECT * FROM file LIMIT {per_page} OFFSET {offset}"            # sql = "SELECT * FROM file"
             # sql = "SELECT * FROM file WHERE FILE_TYPE = 'image/jpeg'" # DB 통일로 인한 구분자 조건 추가
             cursor.execute(sql)
             data = cursor.fetchall()
@@ -709,7 +713,7 @@ def get_image_files():
         return str(e)
     finally:
         conn.close()
-@app.route('/python/download_image/<int:file_id>', methods=['GET'])
+@app.route('/python/download_file/<int:file_id>', methods=['GET'])
 def download_image(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -765,7 +769,7 @@ def get_image_file(file_id):
 # args = parser.parse_args()
 
 
-# app.run(host="0.0.0.0", port=args.port)  # debug=True causes Restarting with stat
+# app.run(host="0.0.0.0", port=5000)  # debug=True causes Restarting with stat
 
 
 
