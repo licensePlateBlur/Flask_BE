@@ -40,14 +40,24 @@ uploads_dir = 'C:/Users/82103/Desktop/blindupload'  # 절대경로
 # app.config['MYSQL_PORT'] = 4567
 
 
+# app.config['MYSQL_USER'] = 'root'
+# app.config['MYSQL_PASSWORD'] = 'root'
+# app.config['MYSQL_DB'] = 'privacy'
+# app.config['MYSQL_HOST'] = 'localhost'
+# app.config['MYSQL_PORT'] = 3306
+# app.config['UPLOAD_FOLDER'] = uploads_dir
+# app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'jpg', 'jpeg', 'gif'}  # 허용된 파일 확장자 목록
+# app.secret_key = "root"
+
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'root'
+app.config['MYSQL_PASSWORD'] = 'root1234'
 app.config['MYSQL_DB'] = 'privacy'
-app.config['MYSQL_HOST'] = 'localhost'
+app.config['MYSQL_HOST'] = 'database-1.cz4wuttjguhb.ap-northeast-2.rds.amazonaws.com'
 app.config['MYSQL_PORT'] = 3306
 app.config['UPLOAD_FOLDER'] = uploads_dir
 app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'jpg', 'jpeg', 'gif'}  # 허용된 파일 확장자 목록
 app.secret_key = "root"
+
 
 os.makedirs(uploads_dir, exist_ok=True)
 
@@ -151,7 +161,7 @@ def detect_image():
 
 
 
-            Image.fromarray(results.ims[0]).save(img_newfilepath)
+            # Image.fromarray(results.ims[0]).save(img_newfilepath)
 
             
 
@@ -636,6 +646,56 @@ def get_video_file(file_id):
         return send_file(filepath, mimetype=result['FILE_TYPE'])
     
     return 'File not found', 404
+@app.route('/python/file/<int:file_id>', methods=['GET'])
+def get_file(file_id):
+    # 파일 정보 조회
+    conn.connect()
+    with conn.cursor() as cursor:
+        # sql = "SELECT * FROM process_info WHERE id = %s"
+        sql = "SELECT * FROM file WHERE id = %s" # 동영상 DB 이름 통일
+        cursor.execute(sql, file_id)
+        result = cursor.fetchone()
+        cursor.close()
+    if result:
+        # 파일 경로 생성
+        filepath = result['FILE_PATH']
+        print(result['FILE_TYPE'])
+        storedfilepath = result['STORED_FILE_NAME']
+
+        # 파일 경로 전달 //절대경로
+        return send_file(filepath, mimetype=result['FILE_TYPE'])
+    
+    return 'File not found', 404
+
+@app.route('/python/delete/<int:file_id>', methods=['GET'])
+def delete_file(file_id):
+    conn.connect()
+    try:
+        with conn.cursor() as cursor:
+            # 파일 이름 가져오기
+            sql = "SELECT * FROM file WHERE id = %s"
+            cursor.execute(sql, file_id)
+            result = cursor.fetchone()
+            filepath = result['FILE_PATH']
+            if result:
+                 # 로컬 파일 삭제
+                try:
+                    os.remove(filepath)
+                    print('삭제성공')
+                except:
+                    print('파일이 없는데용 ㅇㅅㅇ??')
+                # 데이터베이스 레코드 삭제
+                delete_query = "DELETE FROM file WHERE id = %s"
+                cursor.execute(delete_query, file_id)
+                conn.commit()
+                cursor.close()
+                conn.close()
+
+        return 'File deleted successfully', 200
+
+    except Exception as e:
+        conn.rollback()
+        return 'Error deleting file', 500
 
 
 
