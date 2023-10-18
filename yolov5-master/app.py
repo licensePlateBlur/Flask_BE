@@ -40,19 +40,10 @@ uploads_dir = 'C:/Users/82103/Desktop/blindupload'  # 절대경로
 # app.config['MYSQL_PORT'] = 4567
 
 
-# app.config['MYSQL_USER'] = 'root'
-# app.config['MYSQL_PASSWORD'] = 'root'
-# app.config['MYSQL_DB'] = 'privacy'
-# app.config['MYSQL_HOST'] = 'localhost'
-# app.config['MYSQL_PORT'] = 3306
-# app.config['UPLOAD_FOLDER'] = uploads_dir
-# app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'jpg', 'jpeg', 'gif'}  # 허용된 파일 확장자 목록
-# app.secret_key = "root"
-
 app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = 'root1234'
+app.config['MYSQL_PASSWORD'] = 'root'
 app.config['MYSQL_DB'] = 'privacy'
-app.config['MYSQL_HOST'] = 'database-1.cz4wuttjguhb.ap-northeast-2.rds.amazonaws.com'
+app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_PORT'] = 3306
 app.config['UPLOAD_FOLDER'] = uploads_dir
 app.config['ALLOWED_EXTENSIONS'] = {'mp4', 'jpg', 'jpeg', 'gif'}  # 허용된 파일 확장자 목록
