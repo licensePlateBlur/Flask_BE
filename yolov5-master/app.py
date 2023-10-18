@@ -777,7 +777,6 @@ def upload_image_file():
         return 'Invalid file extension'
     
     return "성공"
-# @app.route('/python/image_files', methods=['GET'])
 
 
 @app.route('/python/files', methods=['GET'])
