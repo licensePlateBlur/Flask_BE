@@ -844,10 +844,9 @@ def get_image_file(file_id):
         return send_file(filepath, mimetype=result['FILE_TYPE'])
     
     return 'File not found', 404
-# @app.route('/display/<filename>')
-# def display_video(filename):
-# 	#print('display_video filename: ' + filename)
-# 	return redirect(url_for('static/video_1.mp4', code=200))
+
+if __name__ == '__main__':
+   app.run('0.0.0.0', port=5000, debug=True)
 
 
 
