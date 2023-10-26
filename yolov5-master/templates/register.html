@@ -15,6 +15,15 @@
         <div class="row mt-5">
             <h1>회원가입</h1>
         </div>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                    <li style="color: {% if 'error' in message %}red{% else %}green{% endif %}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %} 
         <div class="row mt-5">
         <div class="col-12">
             <form method="POST" >

@@ -111,7 +111,12 @@ def register():
             conn.connect()
             cursor = conn.cursor()
             query = "INSERT INTO user (ID, PASSWORD, USERNAME, EMAIL) VALUES (%s, MD5(%s), %s, %s)"
-            cursor.execute(query, (userid, password, username, email))
+            try:
+                cursor.execute(query, (userid, password, username, email))
+            except:
+               flash('중복된 아이디 혹은 이메일이 존재합니다.')
+               return redirect(url_for('register'))
+                
             conn.commit()
             cursor.close()
             conn.close()
@@ -143,7 +148,7 @@ def login():
             return redirect(url_for('hello_world'))
         else:
             flash('로그인 실패', 'error')
-    return render_template('login.html')
+    return redirect(url_for('hello_world'))
 
 @app.route('/profile')
 @login_required
@@ -156,6 +161,11 @@ def profile():
 def logout():
     logout_user()
     return redirect(url_for('hello_world'))
+
+@login_manager.unauthorized_handler
+def unauthorized():
+    flash('로그인해주세요.')
+    return redirect("/")
 
 
 
