@@ -1,5 +1,5 @@
 from re import DEBUG, sub
-from flask import Flask, render_template, request, redirect, send_file, url_for, jsonify
+from flask import Flask, render_template, request, redirect, send_file, url_for, jsonify, flash
 from werkzeug.utils import secure_filename, send_from_directory
 import os
 import subprocess
@@ -18,6 +18,8 @@ import time
 import uuid
 import shutil
 import ffmpeg
+from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
+
 
 import datetime
 
@@ -28,11 +30,24 @@ import pymysql
 app = Flask(__name__)
 CORS(app)
 
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.init_app(app)
+
+class User(UserMixin):
+    def __init__(self, user_id):
+        self.id = user_id
+
+@login_manager.user_loader
+def load_user(user_id):
+    return User(user_id)
+
+
 # mysql.init_app(app)
 
 # uploads_dir = os.path.join(app.instance_path, 'uploads')
-# uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
-uploads_dir = 'C:/Users/82103/Desktop/blindupload'  # 절대경로
+uploads_dir = 'C:/Users/yjson/Desktop/blindupload'  # 절대경로
+# uploads_dir = 'C:/Users/82103/Desktop/blindupload'  # 절대경로
 # app.config['MYSQL_USER'] = 'kwonsungmin'
 # app.config['MYSQL_PASSWORD'] = "1234"
 # app.config['MYSQL_DB'] = 'privacy'
@@ -70,7 +85,79 @@ print(pymysql.__version__)
 @app.route("/", methods=['GET', 'POST'])
 def hello_world():
     print("연결 성공")
+    if current_user.is_authenticated:
+        flash(f'{current_user.id}님 환영합니다.')
+    else:
+        flash('로그인해주세요.')
     return render_template('index.html')
+
+@app.route('/register', methods=['GET','POST'])
+def register():
+    if request.method == 'GET':
+        return render_template("register.html")
+    else:
+        username = request.form.get('username')
+        email = request.form.get('email')
+        userid = request.form.get('userid') 
+        password = request.form.get('password')
+        re_password = request.form.get('re_password')
+
+
+        if not (userid and username and email and password and re_password) :
+            return "모두 입력해주세요"
+        elif password != re_password:
+            return "비밀번호를 확인해주세요"
+        else:
+            conn.connect()
+            cursor = conn.cursor()
+            query = "INSERT INTO user (ID, PASSWORD, USERNAME, EMAIL) VALUES (%s, MD5(%s), %s, %s)"
+            cursor.execute(query, (userid, password, username, email))
+            conn.commit()
+            cursor.close()
+            conn.close()
+
+            return redirect(url_for('hello_world'))
+        
+
+@app.route('/login', methods=['GET','POST'])
+def login():
+    if request.method == 'GET':
+        return render_template("login.html")
+    else:
+        conn.connect()
+        cursor = conn.cursor()
+        userid = request.form.get('userid') 
+        password = request.form.get('password')
+
+        query = "SELECT ID, PASSWORD FROM user WHERE ID = %s AND PASSWORD = MD5(%s)"
+        cursor.execute(query, (userid, password))
+        user = cursor.fetchone()
+
+        if user:
+            print(user)
+            user_json = json.dumps(user)
+            user_str = json.loads(user_json)
+            user_obj = User(user_str['ID'])
+            login_user(user_obj)
+            flash('로그인 성공', 'success')
+            return redirect(url_for('hello_world'))
+        else:
+            flash('로그인 실패', 'error')
+    return render_template('login.html')
+
+@app.route('/profile')
+@login_required
+def profile():
+    return f'{current_user.id}님, 환영합니다.'
+
+
+@app.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    return redirect(url_for('hello_world'))
+
+
 
 
 def allowed_file(filename):
@@ -78,129 +165,132 @@ def allowed_file(filename):
            filename.rsplit('.', 1)[1].lower() in app.config['ALLOWED_EXTENSIONS']
 
 
+
 @app.route("/python/detect_image", methods=['GET', 'POST'])
+@login_required
 def detect_image():
-
-    if request.method == 'POST':
-        if 'image' not in request.files:
-            return '첨부된 이미지가 없습니다.'
-     
-        image = request.files['image']
-
-        if image.filename == '':
-            return 'No selected file'
-
-
-        # if image.filename.endswith('.jpg') or image.filename.endswith('.png'):
-        if image and allowed_file(image.filename):
-            create_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            
-
-            split_tup = os.path.splitext(image.filename)
-            file_name = split_tup[0]
-            file_extension = split_tup[1]
-
-            img_bytes = image.read()
-            img = Image.open(io.BytesIO(img_bytes))
-
-            mimetype = image.mimetype
-
-            
-
-        # tmp_savename = f"tmp/{image.filename}"
-
-        # request.files['image'].save(tmp_savename)
-        # file_size = os.stat(tmp_savename).st_size
-
-            file_size = len(img_bytes)
-
         
-            obj = secure_filename(img.filename)
-            video_path = os.path.join(os.getcwd(), "static", obj)
-            # model = torch.hub.load('yolov5', 'yolov5s', pretrained=True, source='local')  # force_reload = recache latest code
-            model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v6', source='local')  # force_reload = recache latest code
-            model.eval()
-            results = model([img])
-            print(results.pandas().xyxy[0].to_json(orient="records"))
-            # results.render()
-            result_vals_wVehicle=[]
-            result_vals_wVehicle = json.loads(results.pandas().xyxy[0].to_json(orient="records"))
+        if request.method == 'POST':
+            if 'image' not in request.files:
+                return '첨부된 이미지가 없습니다.'
+        
+            image = request.files['image']
 
-            for i in range(len(result_vals_wVehicle) -1, -1, -1):
-                if isinstance(result_vals_wVehicle[i], dict) and result_vals_wVehicle[i].get("name") == "vehicle":
-                    del result_vals_wVehicle[i]
-            
-            result_vals = []
-            result_vals = result_vals_wVehicle
-            print("done")
-
-            # img_oldname = os.path.join(os.getcwd(), "static", image.filename)
-            img_newfilename = file_name  + str(uuid.uuid4()) + file_extension
-
-            # img_newfilepath = os.path.join(os.getcwd(), "static", img_newfilename )
-            img_newfilepath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], img_newfilename))
-
-            print("파일 경로: " + img_newfilepath)
-
-            # os.rename(img_oldname, img_newname)
+            if image.filename == '':
+                return 'No selected file'
 
 
-            # img_savename_backslash = os.path.join(os.getcwd(), "static", image.filename)
+            # if image.filename.endswith('.jpg') or image.filename.endswith('.png'):
+            if image and allowed_file(image.filename):
+                create_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                
 
-            #img_savename_backslash = img_newfilepath
-            # img_savename = img_savename_backslash.replace("\\", "/")
+                split_tup = os.path.splitext(image.filename)
+                file_name = split_tup[0]
+                file_extension = split_tup[1]
 
+                img_bytes = image.read()
+                img = Image.open(io.BytesIO(img_bytes))
 
+                mimetype = image.mimetype
 
-            # Image.fromarray(results.ims[0]).save(img_newfilepath)
+                
+
+            # tmp_savename = f"tmp/{image.filename}"
+
+            # request.files['image'].save(tmp_savename)
+            # file_size = os.stat(tmp_savename).st_size
+
+                file_size = len(img_bytes)
 
             
+                obj = secure_filename(img.filename)
+                video_path = os.path.join(os.getcwd(), "static", obj)
+                # model = torch.hub.load('yolov5', 'yolov5s', pretrained=True, source='local')  # force_reload = recache latest code
+                model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v6', source='local')  # force_reload = recache latest code
+                model.eval()
+                results = model([img])
+                print(results.pandas().xyxy[0].to_json(orient="records"))
+                # results.render()
+                result_vals_wVehicle=[]
+                result_vals_wVehicle = json.loads(results.pandas().xyxy[0].to_json(orient="records"))
+
+                for i in range(len(result_vals_wVehicle) -1, -1, -1):
+                    if isinstance(result_vals_wVehicle[i], dict) and result_vals_wVehicle[i].get("name") == "vehicle":
+                        del result_vals_wVehicle[i]
+                
+                result_vals = []
+                result_vals = result_vals_wVehicle
+                print("done")
+
+                # img_oldname = os.path.join(os.getcwd(), "static", image.filename)
+                img_newfilename = file_name  + str(uuid.uuid4()) + file_extension
+
+                # img_newfilepath = os.path.join(os.getcwd(), "static", img_newfilename )
+                img_newfilepath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], img_newfilename))
+
+                print("파일 경로: " + img_newfilepath)
+
+                # os.rename(img_oldname, img_newname)
 
 
-            # conn = mysql.connect()
+                # img_savename_backslash = os.path.join(os.getcwd(), "static", image.filename)
 
-            # conn.connect()
-            # cursor = conn.cursor()
-
-            # # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(create_date), img_newfilepath, file_size, file_extension, image.filename, img_newfilename)
-            # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
-            # cursor.execute(query, (create_date, img_newfilepath, file_size, file_extension, image.filename, img_newfilename))
-            # #cursor.execute(sql)
-            # # data = cursor.fetchall()
-
-            # conn.commit()
-            # cursor.close()
-            # conn.close()
-
-            # if not data:
-            #     conn.commit()
-            # else: print ("DB upload failed")
-
-            # cursor.close()
-            # conn.close()
-        
-        
-            # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
-            new_data = {"absolute_path": img_newfilepath}
-            # result_vals.insert(0, new_data)
-
-            print(str(result_vals))
-
-            result_vals_quote = str(result_vals).replace('\'', '"')
-
-            print(result_vals_quote)
-  
+                #img_savename_backslash = img_newfilepath
+                # img_savename = img_savename_backslash.replace("\\", "/")
 
 
-            # return result_vals_quote
-            # return result_vals_quote.replace("'", '"')
-            # return json.loads(results.pandas().xyxy[0].to_json(orient="records"))
-            return result_vals
-        else: 
-            return "요청 형식이 올바르지 않습니다."
+
+                # Image.fromarray(results.ims[0]).save(img_newfilepath)
+
+                
+
+
+                # conn = mysql.connect()
+
+                # conn.connect()
+                # cursor = conn.cursor()
+
+                # # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(create_date), img_newfilepath, file_size, file_extension, image.filename, img_newfilename)
+                # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+                # cursor.execute(query, (create_date, img_newfilepath, file_size, file_extension, image.filename, img_newfilename))
+                # #cursor.execute(sql)
+                # # data = cursor.fetchall()
+
+                # conn.commit()
+                # cursor.close()
+                # conn.close()
+
+                # if not data:
+                #     conn.commit()
+                # else: print ("DB upload failed")
+
+                # cursor.close()
+                # conn.close()
+            
+            
+                # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj)}
+                new_data = {"absolute_path": img_newfilepath}
+                # result_vals.insert(0, new_data)
+
+                print(str(result_vals))
+
+                result_vals_quote = str(result_vals).replace('\'', '"')
+
+                print(result_vals_quote)
+    
+
+
+                # return result_vals_quote
+                # return result_vals_quote.replace("'", '"')
+                # return json.loads(results.pandas().xyxy[0].to_json(orient="records"))
+                return result_vals
+            else: 
+                return "요청 형식이 올바르지 않습니다."
 
 
 @app.route("/python/detect_video", methods=['GET', 'POST'])
+@login_required
 def detect_video():
    
     print("detect activated")
@@ -310,9 +400,9 @@ def detect_video():
             # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, video.filename, vid_newfilename)
             # cursor.execute(sql)
             # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
-            query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
+            query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME, USERID) VALUES (%s, %s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
             # cursor.execute(query, (create_date, vid_newfilepath, file_size, file_extension, video.filename, vid_newfilename))
-            cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, video.filename, vid_newfilename))
+            cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, video.filename, vid_newfilename, current_user.id))
 
             # data = cursor.fetchall()
 
@@ -440,6 +530,7 @@ def detect_realtime():
     #return os.path.join(uploads_dir, secure_filename(video.filename)), obj
 
 @app.route("/python/detect_realtime", methods=['GET', 'POST'])
+@login_required
 def opencam():
     print("here")
     subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v6.pt', '--source', '0'], shell=True)
@@ -515,8 +606,8 @@ def opencam():
     # cursor.execute(sql)
 
     # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
-    query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
-    cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, "0.mp4", vid_newfilename))
+    query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME, USERID) VALUES (%s, %s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
+    cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, "0.mp4", vid_newfilename, current_user.id))
 
     # data = cursor.fetchall()
 
@@ -757,8 +848,8 @@ def upload_image_file():
             # 파일 경로를 데이터베이스에 저장
             conn.connect()
             cursor = conn.cursor()
-            query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (create_date, file_path, file_size, mimetype, original_file_name, stored_file_name))
+            query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME, USERID) VALUES (%s, %s, %s, %s, %s, %s, %s)"
+            cursor.execute(query, (create_date, file_path, file_size, mimetype, original_file_name, stored_file_name, current_user.id))
             conn.commit()
             cursor.close()
             conn.close()
@@ -781,7 +872,7 @@ def get_image_files():
             
             offset = (page - 1) * per_page
 
-            sql = f"SELECT * FROM file ORDER BY CREATED_DATE DESC LIMIT {per_page} OFFSET {offset}"            # sql = "SELECT * FROM file"
+            sql = f"SELECT * FROM file WHERE USERID = {current_user.id} ORDER BY CREATED_DATE DESC LIMIT {per_page} OFFSET {offset}"            # sql = "SELECT * FROM file"
             # sql = "SELECT * FROM file WHERE FILE_TYPE = 'image/jpeg'" # DB 통일로 인한 구분자 조건 추가
             cursor.execute(sql)
             data = cursor.fetchall()

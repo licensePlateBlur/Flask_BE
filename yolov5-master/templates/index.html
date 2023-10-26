@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>YOLO-Object Detection</title>
+
     <link rel="stylesheet" type="text/css" href="../static/index.css?ver=4" />
     <script
       src="https://code.jquery.com/jquery-3.3.1.min.js"
@@ -14,6 +15,15 @@
     <div class="App">
       <header class="App-header">
         <p><u> Object Detection - YOLO </u></p>
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul>
+                {% for message in messages %}
+                    <li style="color: {% if 'error' in message %}red{% else %}green{% endif %}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+        {% endwith %} 
         <!-- <div className="pre_img">
           <span><img id="imagebox" src="" /></span>
         </div> -->
@@ -32,7 +42,10 @@
             onchange="readUrl(this)"
           />
         </form>
-        <button name="send"  class="button" id="sendbutton">Send</button>
+        <button name="send" class="button" id="sendbutton">Send</button>
+        <a href="register">회원가입</a>
+        <a href="login">로그인</a>
+        <a href="logout">로그아웃</a>
         <br/>
         <div id="link">
           <a href="" id="download" download>Download!!</a>
