@@ -42,6 +42,11 @@ class User(UserMixin):
 def load_user(user_id):
     return User(user_id)
 
+@login_manager.unauthorized_handler
+def unauthorized():
+    flash('로그인해주세요.')
+    return redirect(url_for('hello_world'))
+
 
 # mysql.init_app(app)
 
@@ -162,10 +167,6 @@ def logout():
     logout_user()
     return redirect(url_for('hello_world'))
 
-@login_manager.unauthorized_handler
-def unauthorized():
-    flash('로그인해주세요.')
-    return redirect("/")
 
 
 
@@ -882,7 +883,7 @@ def get_image_files():
             
             offset = (page - 1) * per_page
 
-            sql = f"SELECT * FROM file WHERE USERID = {current_user.id} ORDER BY CREATED_DATE DESC LIMIT {per_page} OFFSET {offset}"            # sql = "SELECT * FROM file"
+            sql = f"SELECT * FROM file WHERE USERID = '{current_user.id}' ORDER BY CREATED_DATE DESC LIMIT {per_page} OFFSET {offset}"            # sql = "SELECT * FROM file"
             # sql = "SELECT * FROM file WHERE FILE_TYPE = 'image/jpeg'" # DB 통일로 인한 구분자 조건 추가
             cursor.execute(sql)
             data = cursor.fetchall()
