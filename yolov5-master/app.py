@@ -28,6 +28,7 @@ import pymysql
 
 # mysql = MySQL()
 app = Flask(__name__)
+app.config['JSON_AS_ASCII'] = False
 CORS(app)
 
 login_manager = LoginManager()
@@ -44,8 +45,8 @@ def load_user(user_id):
 
 @login_manager.unauthorized_handler
 def unauthorized():
-    flash('로그인해주세요.')
-    return redirect(url_for('hello_world'))
+    message = {"message": "로그인 해주세요."}
+    return jsonify(message)
 
 
 # mysql.init_app(app)
@@ -96,7 +97,7 @@ def hello_world():
         flash('로그인해주세요.')
     return render_template('index.html')
 
-@app.route('/register', methods=['GET','POST'])
+@app.route('/python/register', methods=['GET','POST'])
 def register():
     if request.method == 'GET':
         return render_template("register.html")
@@ -113,23 +114,37 @@ def register():
         elif password != re_password:
             return "비밀번호를 확인해주세요"
         else:
-            conn.connect()
-            cursor = conn.cursor()
-            query = "INSERT INTO user (ID, PASSWORD, USERNAME, EMAIL) VALUES (%s, MD5(%s), %s, %s)"
             try:
+                conn.connect()
+                cursor = conn.cursor()
+                query = "INSERT INTO user (ID, PASSWORD, USERNAME, EMAIL) VALUES (%s, MD5(%s), %s, %s)"
                 cursor.execute(query, (userid, password, username, email))
-            except:
-               flash('중복된 아이디 혹은 이메일이 존재합니다.')
-               return redirect(url_for('register'))
-                
+            except pymysql.IntegrityError as e:
+               if e.args[0] == 1062:
+                error_message = str(e)
+                if 'user.ID' in error_message:
+                    message = {"message": "아이디 중복입니다."}
+                    return jsonify(message)
+                elif 'user.EMAIL' in error_message:
+                    message = {"message": "이메일 중복입니다."}
+                    return jsonify(message)
+                else:
+                    message = {"message": "기타 DB 무결성 오류입니다."}
+                    return jsonify(message)
+            except Exception as e:
+                message = f'{{"message" : "{e}"}}'
+                return jsonify(message)
+
+              
             conn.commit()
             cursor.close()
             conn.close()
 
-            return redirect(url_for('hello_world'))
+            message = f'{{"register" : "{userid}"}}'
+            return jsonify(message)
         
 
-@app.route('/login', methods=['GET','POST'])
+@app.route('/python/login', methods=['GET','POST'])
 def login():
     if request.method == 'GET':
         return render_template("login.html")
@@ -150,23 +165,19 @@ def login():
             user_obj = User(user_str['ID'])
             login_user(user_obj)
             flash('로그인 성공', 'success')
-            return redirect(url_for('hello_world'))
+            message = {"user": userid}
+            return json.dumps(message, ensure_ascii=False)
         else:
-            flash('로그인 실패', 'error')
-    return redirect(url_for('hello_world'))
-
-@app.route('/profile')
-@login_required
-def profile():
-    return f'{current_user.id}님, 환영합니다.'
+            message = {"message": "로그인 실패"}
+    return jsonify(message)
 
 
-@app.route('/logout')
-@login_required
-def logout():
-    logout_user()
-    return redirect(url_for('hello_world'))
-
+# @app.route('/python/logout')
+# @login_required
+# def logout():
+#     logout_user()
+#     message = {"message": "로그아웃 되었습니다."}
+#     return jsonify(message)
 
 
 
@@ -178,8 +189,12 @@ def allowed_file(filename):
 
 
 @app.route("/python/detect_image", methods=['GET', 'POST'])
-@login_required
 def detect_image():
+        
+        if not current_user.is_authenticated:
+            print("user not logged in")
+            message = {"message": "로그인 해주세요."}
+            return jsonify(message)
         
         if request.method == 'POST':
             if 'image' not in request.files:
@@ -301,8 +316,13 @@ def detect_image():
 
 
 @app.route("/python/detect_video", methods=['GET', 'POST'])
-@login_required
 def detect_video():
+    
+
+    if not current_user.is_authenticated:
+        print("user not logged in")
+        message = {"message": "로그인 해주세요."}
+        return jsonify(message)
    
     print("detect activated")
 
@@ -487,6 +507,11 @@ def detect_video():
 
 @app.route("/python/deprecated/detect_realtime", methods=['GET', 'POST'])
 def detect_realtime():
+
+    if not current_user.is_authenticated:
+        print("user not logged in")
+        message = {"message": "로그인 해주세요."}
+        return jsonify(message)
    
     print("detect activated")
     video = request.files['video']
@@ -541,8 +566,13 @@ def detect_realtime():
     #return os.path.join(uploads_dir, secure_filename(video.filename)), obj
 
 @app.route("/python/detect_realtime", methods=['GET', 'POST'])
-@login_required
 def opencam():
+
+    if not current_user.is_authenticated:
+        print("user not logged in")
+        message = {"message": "로그인 해주세요."}
+        return jsonify(message)
+
     print("here")
     subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v6.pt', '--source', '0'], shell=True)
 
@@ -671,6 +701,7 @@ def opencam():
 
 
 @app.route('/python/download_file/<int:file_id>', methods=['GET'])
+@login_required
 def download_file(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -695,6 +726,7 @@ def download_file(file_id):
 
 
 @app.route('/python/download_video/<int:file_id>', methods=['GET'])
+@login_required
 def download_video(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -719,6 +751,7 @@ def download_video(file_id):
 
 
 @app.route('/python/video/<int:file_id>', methods=['GET'])
+@login_required
 def get_video_file(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -740,6 +773,7 @@ def get_video_file(file_id):
     
     return 'File not found', 404
 @app.route('/python/file/<int:file_id>', methods=['GET'])
+@login_required
 def get_file(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -761,6 +795,7 @@ def get_file(file_id):
     return 'File not found', 404
 
 @app.route('/python/delete/<int:file_id>', methods=['GET'])
+@login_required
 def delete_file(file_id):
     conn.connect()
     try:
@@ -794,6 +829,12 @@ def delete_file(file_id):
 
 @app.route('/python/video_files', methods=['GET'])
 def get_video_files():
+
+    if not current_user.is_authenticated:
+        print("user not logged in")
+        message = {"message": "로그인 해주세요."}
+        return jsonify(message)
+
     try:
         conn.connect()
         with conn.cursor() as cursor:
@@ -874,6 +915,12 @@ def upload_image_file():
 
 @app.route('/python/files', methods=['GET'])
 def get_image_files():
+
+    if not current_user.is_authenticated:
+        print("user not logged in")
+        message = {"message": "로그인 해주세요."}
+        return jsonify(message)
+    
     try:
         conn.connect()
         with conn.cursor() as cursor:
@@ -894,6 +941,7 @@ def get_image_files():
         conn.close()
 
 @app.route('/python/download_image/<int:file_id>', methods=['GET'])
+@login_required
 def download_image(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -917,6 +965,7 @@ def download_image(file_id):
 
 
 @app.route('/python/image/<int:file_id>', methods=['GET'])
+@login_required
 def get_image_file(file_id):
     # 파일 정보 조회
     conn.connect()

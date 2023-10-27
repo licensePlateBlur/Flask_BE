@@ -37,6 +37,34 @@ import json
 
 import torch
 
+
+from logging.config import dictConfig
+import logging
+
+dictConfig({
+    'version': 1,
+    'formatters': {
+        'default': {
+            'format': '%(message)s',
+        }
+    },
+    'handlers': {
+        'file': {
+            'level': 'INFO',
+            'class': 'logging.FileHandler',
+            'filename': 'video_info.log',
+            'formatter': 'default',
+            'mode': 'w+'
+        },
+    },
+    'root': {
+        'level': 'INFO',
+        'handlers': ['file']
+    }
+})
+
+
+
 FILE = Path(__file__).resolve()
 ROOT = FILE.parents[0]  # YOLOv5 root directory
 if str(ROOT) not in sys.path:
