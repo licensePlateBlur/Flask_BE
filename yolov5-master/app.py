@@ -18,7 +18,9 @@ import time
 import uuid
 import shutil
 import ffmpeg
+from datetime import timedelta
 from flask_login import LoginManager, UserMixin, login_user, current_user, logout_user, login_required
+from flask_jwt_extended import JWTManager, create_access_token, jwt_required, get_jwt
 
 
 import datetime
@@ -29,6 +31,12 @@ import pymysql
 # mysql = MySQL()
 app = Flask(__name__)
 app.config['JSON_AS_ASCII'] = False
+app.config['JWT_SECRET_KEY'] = 'groot'
+app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
+app.config['JWT_BLACKLIST_ENABLED'] = True
+app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access']
+jwt = JWTManager(app)
+jwt_blocklist = set()
 CORS(app)
 
 login_manager = LoginManager()
@@ -82,6 +90,11 @@ conn = pymysql.connect(
     cursorclass = pymysql.cursors.DictCursor
 
 )
+
+@jwt.token_in_blocklist_loader
+def check_if_token_is_revoked(jwt_header, jwt_payload: dict):
+    jti = jwt_payload["jti"]
+    return jti in jwt_blocklist
 
 # model = torch.hub.load('yolov5', 'privacyV4', pretrained=True, source='local')  # force_reload = recache latest code
 
@@ -144,8 +157,33 @@ def register():
             return jsonify(message)
         
 
+@app.route('/python/unregister', methods=['GET'])
+@login_required
+@jwt_required()
+def unregister():
+    conn.connect()
+    cursor = conn.cursor()
+
+    query = "DELETE FROM user WHERE ID = (%s)"
+    cursor.execute(query, (current_user.id))
+
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+    logout_user()
+    jti = get_jwt()["jti"]
+    jwt_blocklist.add(jti)
+    message = {"message": "탈퇴되었습니다."}
+    return jsonify(message)       
+
 @app.route('/python/login', methods=['GET','POST'])
 def login():
+
+    if current_user.is_authenticated:
+        message = {"message": "이미 로그인중입니다."}
+        return jsonify(message)
+
     if request.method == 'GET':
         return render_template("login.html")
     else:
@@ -164,20 +202,28 @@ def login():
             user_str = json.loads(user_json)
             user_obj = User(user_str['ID'])
             login_user(user_obj)
+
+            access_token = create_access_token(identity=user_str['ID'])
             flash('로그인 성공', 'success')
             message = {"user": userid}
-            return json.dumps(message, ensure_ascii=False)
+            # return json.dumps(message, ensure_ascii=False)
+            return jsonify(access_token=access_token), 200
         else:
-            message = {"message": "로그인 실패"}
+            # message = {"message": "로그인 실패"}
+            return jsonify(message="로그인 실패"), 401
+    # return jsonify(message)
+            
+
+
+@app.route('/python/logout')
+@login_required
+@jwt_required()
+def logout():
+    logout_user()
+    jti = get_jwt()["jti"]
+    jwt_blocklist.add(jti)
+    message = {"message": "로그아웃 되었습니다."}
     return jsonify(message)
-
-
-# @app.route('/python/logout')
-# @login_required
-# def logout():
-#     logout_user()
-#     message = {"message": "로그아웃 되었습니다."}
-#     return jsonify(message)
 
 
 
@@ -189,12 +235,14 @@ def allowed_file(filename):
 
 
 @app.route("/python/detect_image", methods=['GET', 'POST'])
+@jwt_required()
 def detect_image():
         
         if not current_user.is_authenticated:
             print("user not logged in")
             message = {"message": "로그인 해주세요."}
             return jsonify(message)
+
         
         if request.method == 'POST':
             if 'image' not in request.files:
@@ -316,6 +364,7 @@ def detect_image():
 
 
 @app.route("/python/detect_video", methods=['GET', 'POST'])
+@jwt_required()
 def detect_video():
     
 
@@ -506,6 +555,7 @@ def detect_video():
 
 
 @app.route("/python/deprecated/detect_realtime", methods=['GET', 'POST'])
+@jwt_required()
 def detect_realtime():
 
     if not current_user.is_authenticated:
@@ -774,6 +824,7 @@ def get_video_file(file_id):
     return 'File not found', 404
 @app.route('/python/file/<int:file_id>', methods=['GET'])
 @login_required
+@jwt_required()
 def get_file(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -796,6 +847,7 @@ def get_file(file_id):
 
 @app.route('/python/delete/<int:file_id>', methods=['GET'])
 @login_required
+@jwt_required()
 def delete_file(file_id):
     conn.connect()
     try:
@@ -828,6 +880,7 @@ def delete_file(file_id):
 
 
 @app.route('/python/video_files', methods=['GET'])
+@jwt_required()
 def get_video_files():
 
     if not current_user.is_authenticated:
@@ -914,6 +967,7 @@ def upload_image_file():
 
 
 @app.route('/python/files', methods=['GET'])
+@jwt_required()
 def get_image_files():
 
     if not current_user.is_authenticated:
@@ -942,6 +996,7 @@ def get_image_files():
 
 @app.route('/python/download_image/<int:file_id>', methods=['GET'])
 @login_required
+@jwt_required()
 def download_image(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -966,6 +1021,7 @@ def download_image(file_id):
 
 @app.route('/python/image/<int:file_id>', methods=['GET'])
 @login_required
+@jwt_required()
 def get_image_file(file_id):
     # 파일 정보 조회
     conn.connect()
