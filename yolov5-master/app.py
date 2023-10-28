@@ -207,7 +207,7 @@ def login():
             flash('로그인 성공', 'success')
             message = {"user": userid}
             # return json.dumps(message, ensure_ascii=False)
-            return jsonify(access_token=access_token), 200
+            return jsonify(user=userid, access_token=access_token), 200
         else:
             # message = {"message": "로그인 실패"}
             return jsonify(message="로그인 실패"), 401
