@@ -35,6 +35,7 @@ app.config['JWT_SECRET_KEY'] = 'groot'
 app.config['JWT_ACCESS_TOKEN_EXPIRES'] = timedelta(hours=1)
 app.config['JWT_BLACKLIST_ENABLED'] = True
 app.config['JWT_BLACKLIST_TOKEN_CHECKS'] = ['access']
+app.json.sort_keys = False
 jwt = JWTManager(app)
 jwt_blocklist = set()
 CORS(app)
@@ -220,6 +221,41 @@ def logout():
     jwt_blocklist.add(jti)
     message = {"message": "로그아웃 되었습니다."}
     return jsonify(message)
+
+
+@app.route('/python/mypage')
+@jwt_required()
+def mypage():
+    current_userid = get_jwt()["sub"]
+
+    conn.connect()
+    cursor = conn.cursor()
+
+    query = "SELECT ID, USERNAME, EMAIL FROM user WHERE ID = %s"
+    cursor.execute(query, (current_userid))
+    user_info = cursor.fetchone()
+
+    query = "SELECT COUNT(USERID) FROM file WHERE USERID = %s"
+    cursor.execute(query, (current_userid))
+    file_count = cursor.fetchone()
+
+    print(user_info)
+    print(file_count)
+
+    cursor.close()
+    conn.close()
+
+
+    result = {
+        'ID': user_info['ID'],
+        'USERNAME': user_info['USERNAME'],
+        'EMAIL': user_info['EMAIL'],
+        'FILECOUNT': file_count['COUNT(USERID)']
+    }
+
+
+    
+    return jsonify(result)
 
 
 
