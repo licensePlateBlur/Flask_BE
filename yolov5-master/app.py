@@ -119,13 +119,10 @@ def register():
         email = request.form.get('email')
         userid = request.form.get('userid') 
         password = request.form.get('password')
-        re_password = request.form.get('re_password')
 
 
-        if not (userid and username and email and password and re_password) :
+        if not (userid and username and email and password) :
             return "모두 입력해주세요"
-        elif password != re_password:
-            return "비밀번호를 확인해주세요"
         else:
             try:
                 conn.connect()
@@ -137,13 +134,13 @@ def register():
                 error_message = str(e)
                 if 'user.ID' in error_message:
                     message = {"message": "아이디 중복입니다."}
-                    return jsonify(message)
+                    return jsonify(message), 400
                 elif 'user.EMAIL' in error_message:
                     message = {"message": "이메일 중복입니다."}
-                    return jsonify(message)
+                    return jsonify(message), 400
                 else:
                     message = {"message": "기타 DB 무결성 오류입니다."}
-                    return jsonify(message)
+                    return jsonify(message), 400
             except Exception as e:
                 message = f'{{"message" : "{e}"}}'
                 return jsonify(message)
@@ -205,9 +202,8 @@ def login():
 
             access_token = create_access_token(identity=user_str['ID'])
             flash('로그인 성공', 'success')
-            message = {"user": userid}
             # return json.dumps(message, ensure_ascii=False)
-            return jsonify(user=userid, access_token=access_token), 200
+            return jsonify(access_token=access_token), 200
         else:
             # message = {"message": "로그인 실패"}
             return jsonify(message="로그인 실패"), 401
@@ -919,6 +915,7 @@ def return_file():
         return str(e)
 
 @app.route('/python/image_upload', methods=['GET', 'POST'])
+@jwt_required()
 def upload_image_file():
     if request.method == 'POST':
         # 파일이 전송되었는지 확인
@@ -970,10 +967,10 @@ def upload_image_file():
 @jwt_required()
 def get_image_files():
 
-    if not current_user.is_authenticated:
-        print("user not logged in")
-        message = {"message": "로그인 해주세요."}
-        return jsonify(message)
+    # if not current_user.is_authenticated:
+    #     print("user not logged in")
+    #     message = {"message": "로그인 해주세요."}
+    #     return jsonify(message)
     
     try:
         conn.connect()
