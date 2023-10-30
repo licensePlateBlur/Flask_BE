@@ -156,7 +156,6 @@ def register():
         
 
 @app.route('/python/unregister', methods=['GET'])
-@login_required
 @jwt_required()
 def unregister():
 
@@ -216,7 +215,6 @@ def login():
 
 
 @app.route('/python/logout')
-@login_required
 @jwt_required()
 def logout():
     logout_user()
@@ -786,7 +784,7 @@ def opencam():
 
 
 @app.route('/python/download_file/<int:file_id>', methods=['GET'])
-@login_required
+@jwt_required()
 def download_file(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -811,7 +809,7 @@ def download_file(file_id):
 
 
 @app.route('/python/download_video/<int:file_id>', methods=['GET'])
-@login_required
+@jwt_required()
 def download_video(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -836,7 +834,7 @@ def download_video(file_id):
 
 
 @app.route('/python/video/<int:file_id>', methods=['GET'])
-@login_required
+@jwt_required()
 def get_video_file(file_id):
     # 파일 정보 조회
     conn.connect()
@@ -858,7 +856,6 @@ def get_video_file(file_id):
     
     return 'File not found', 404
 @app.route('/python/file/<int:file_id>', methods=['GET'])
-@login_required
 @jwt_required()
 def get_file(file_id):
     # 파일 정보 조회
@@ -881,7 +878,6 @@ def get_file(file_id):
     return 'File not found', 404
 
 @app.route('/python/delete/<int:file_id>', methods=['GET'])
-@login_required
 @jwt_required()
 def delete_file(file_id):
     conn.connect()
@@ -1035,7 +1031,6 @@ def get_image_files():
         conn.close()
 
 @app.route('/python/download_image/<int:file_id>', methods=['GET'])
-@login_required
 @jwt_required()
 def download_image(file_id):
     # 파일 정보 조회
@@ -1060,7 +1055,6 @@ def download_image(file_id):
 
 
 @app.route('/python/image/<int:file_id>', methods=['GET'])
-@login_required
 @jwt_required()
 def get_image_file(file_id):
     # 파일 정보 조회
