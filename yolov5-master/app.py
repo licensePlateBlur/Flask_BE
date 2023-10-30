@@ -159,11 +159,14 @@ def register():
 @login_required
 @jwt_required()
 def unregister():
+
+    current_userid = get_jwt()["sub"]
+
     conn.connect()
     cursor = conn.cursor()
 
     query = "DELETE FROM user WHERE ID = (%s)"
-    cursor.execute(query, (current_user.id))
+    cursor.execute(query, (current_userid))
 
     conn.commit()
     cursor.close()
@@ -399,6 +402,7 @@ def detect_image():
 @jwt_required()
 def detect_video():
     
+    current_userid = get_jwt()["sub"]
 
     if not current_user.is_authenticated:
         print("user not logged in")
@@ -503,7 +507,7 @@ def detect_video():
             # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
             result.insert(0, new_data)
 
-
+        
 
             # conn = mysql.connect()
             conn.connect()
@@ -514,7 +518,7 @@ def detect_video():
             # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
             query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME, USERID) VALUES (%s, %s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
             # cursor.execute(query, (create_date, vid_newfilepath, file_size, file_extension, video.filename, vid_newfilename))
-            cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, video.filename, vid_newfilename, current_user.id))
+            cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, video.filename, vid_newfilename, current_userid))
 
             # data = cursor.fetchall()
 
@@ -648,12 +652,11 @@ def detect_realtime():
     #return os.path.join(uploads_dir, secure_filename(video.filename)), obj
 
 @app.route("/python/detect_realtime", methods=['GET', 'POST'])
+@jwt_required()
 def opencam():
 
-    if not current_user.is_authenticated:
-        print("user not logged in")
-        message = {"message": "로그인 해주세요."}
-        return jsonify(message)
+    current_userid = get_jwt()["sub"]
+
 
     print("here")
     subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v6.pt', '--source', '0'], shell=True)
@@ -730,7 +733,7 @@ def opencam():
 
     # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
     query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME, USERID) VALUES (%s, %s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
-    cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, "0.mp4", vid_newfilename, current_user.id))
+    cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, "0.mp4", vid_newfilename, current_userid))
 
     # data = cursor.fetchall()
 
@@ -953,6 +956,9 @@ def return_file():
 @app.route('/python/image_upload', methods=['GET', 'POST'])
 @jwt_required()
 def upload_image_file():
+
+    current_userid = get_jwt()["sub"]
+
     if request.method == 'POST':
         # 파일이 전송되었는지 확인
         if 'file' not in request.files:
@@ -987,7 +993,7 @@ def upload_image_file():
             conn.connect()
             cursor = conn.cursor()
             query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME, USERID) VALUES (%s, %s, %s, %s, %s, %s, %s)"
-            cursor.execute(query, (create_date, file_path, file_size, mimetype, original_file_name, stored_file_name, current_user.id))
+            cursor.execute(query, (create_date, file_path, file_size, mimetype, original_file_name, stored_file_name, current_userid))
             conn.commit()
             cursor.close()
             conn.close()
