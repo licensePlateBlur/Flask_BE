@@ -271,10 +271,10 @@ def allowed_file(filename):
 @jwt_required()
 def detect_image():
         
-        if not current_user.is_authenticated:
-            print("user not logged in")
-            message = {"message": "로그인 해주세요."}
-            return jsonify(message)
+        # if not current_user.is_authenticated:
+        #     print("user not logged in")
+        #     message = {"message": "로그인 해주세요."}
+        #     return jsonify(message)
 
         
         if request.method == 'POST':
@@ -402,10 +402,10 @@ def detect_video():
     
     current_userid = get_jwt()["sub"]
 
-    if not current_user.is_authenticated:
-        print("user not logged in")
-        message = {"message": "로그인 해주세요."}
-        return jsonify(message)
+    # if not current_user.is_authenticated:
+    #     print("user not logged in")
+    #     message = {"message": "로그인 해주세요."}
+    #     return jsonify(message)
    
     print("detect activated")
 
@@ -592,10 +592,10 @@ def detect_video():
 @jwt_required()
 def detect_realtime():
 
-    if not current_user.is_authenticated:
-        print("user not logged in")
-        message = {"message": "로그인 해주세요."}
-        return jsonify(message)
+    # if not current_user.is_authenticated:
+    #     print("user not logged in")
+    #     message = {"message": "로그인 해주세요."}
+    #     return jsonify(message)
    
     print("detect activated")
     video = request.files['video']
@@ -914,10 +914,10 @@ def delete_file(file_id):
 @jwt_required()
 def get_video_files():
 
-    if not current_user.is_authenticated:
-        print("user not logged in")
-        message = {"message": "로그인 해주세요."}
-        return jsonify(message)
+    # if not current_user.is_authenticated:
+    #     print("user not logged in")
+    #     message = {"message": "로그인 해주세요."}
+    #     return jsonify(message)
 
     try:
         conn.connect()
