@@ -971,6 +971,7 @@ def get_image_files():
     #     print("user not logged in")
     #     message = {"message": "로그인 해주세요."}
     #     return jsonify(message)
+    current_userid = get_jwt()["sub"]
     
     try:
         conn.connect()
@@ -981,7 +982,7 @@ def get_image_files():
             
             offset = (page - 1) * per_page
 
-            sql = f"SELECT * FROM file WHERE USERID = '{current_user.id}' ORDER BY CREATED_DATE DESC LIMIT {per_page} OFFSET {offset}"            # sql = "SELECT * FROM file"
+            sql = f"SELECT * FROM file WHERE USERID = '{current_userid}' ORDER BY CREATED_DATE DESC LIMIT {per_page} OFFSET {offset}"            # sql = "SELECT * FROM file"
             # sql = "SELECT * FROM file WHERE FILE_TYPE = 'image/jpeg'" # DB 통일로 인한 구분자 조건 추가
             cursor.execute(sql)
             data = cursor.fetchall()
