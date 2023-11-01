@@ -289,6 +289,7 @@ def detect_image():
             model_no = int(request.form['model'])
 
 
+
             # if image.filename.endswith('.jpg') or image.filename.endswith('.png'):
             if image and allowed_file(image.filename):
                 create_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -321,10 +322,10 @@ def detect_image():
                 elif(model_no ==3): #mobile phone
                     model = torch.hub.load('yolov5', 'custom', 'best_phone', source='local')  # force_reload = recache latest code
                 elif(model_no ==4): #id & card
+                    print("카드 가중치 실행")
                     model = torch.hub.load('yolov5', 'custom', 'best_card', source='local')  # force_reload = recache latest code
 
                 
-                model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v6', source='local')  # force_reload = recache latest code
                 model.eval()
                 results = model([img])
                 print(results.pandas().xyxy[0].to_json(orient="records"))
@@ -335,6 +336,11 @@ def detect_image():
                 for i in range(len(result_vals_wVehicle) -1, -1, -1):
                     if isinstance(result_vals_wVehicle[i], dict) and result_vals_wVehicle[i].get("name") == "vehicle":
                         del result_vals_wVehicle[i]
+                    if isinstance(result_vals_wVehicle[i], dict) and model_no == 1 and result_vals_wVehicle[i].get("name") == "license-plate":
+                        del result_vals_wVehicle[i]
+                    if isinstance(result_vals_wVehicle[i], dict) and model_no == 2 and result_vals_wVehicle[i].get("name") == "face":
+                        del result_vals_wVehicle[i]
+
                 
                 result_vals = []
                 result_vals = result_vals_wVehicle

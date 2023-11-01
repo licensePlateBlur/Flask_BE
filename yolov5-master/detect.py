@@ -228,6 +228,7 @@ def run(
 
                             im0[y1:y2, x1:x2] = blur
                             
+                            
                         if 'Mobile phone' in label:
 
                             x1 = int(xyxy[0].item())
