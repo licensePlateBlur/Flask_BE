@@ -109,6 +109,7 @@ def run(
         half=False,  # use FP16 half-precision inference
         dnn=False,  # use OpenCV DNN for ONNX inference
         vid_stride=1,  # video frame-rate stride
+        model_no = 0,  # select weights file
 ):
     source = str(source)
     save_img = not nosave and not source.endswith('.txt')  # save inference images
@@ -216,7 +217,7 @@ def run(
                         if 'vehicle' in label:
                             continue
 
-                        if '0' in label:
+                        if '0' in label and model_no == 1:
 
                             x1 = int(xyxy[0].item())
                             y1 = int(xyxy[1].item())
@@ -252,7 +253,7 @@ def run(
 
 
 
-                        if 'license-plate' in label:
+                        if 'license-plate' in label and model_no == 2:
 
                             x1 = int(xyxy[0].item())
                             y1 = int(xyxy[1].item())
@@ -367,6 +368,7 @@ def parse_opt():
     parser.add_argument('--half', action='store_true', help='use FP16 half-precision inference')
     parser.add_argument('--dnn', action='store_true', help='use OpenCV DNN for ONNX inference')
     parser.add_argument('--vid-stride', type=int, default=1, help='video frame-rate stride')
+    parser.add_argument('--model-no',type=int, help='select weights')
     opt = parser.parse_args()
     opt.imgsz *= 2 if len(opt.imgsz) == 1 else 1  # expand
     print_args(vars(opt))

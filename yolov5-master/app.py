@@ -286,6 +286,8 @@ def detect_image():
             if image.filename == '':
                 return 'No selected file'
 
+            model_no = int(request.form['model'])
+
 
             # if image.filename.endswith('.jpg') or image.filename.endswith('.png'):
             if image and allowed_file(image.filename):
@@ -314,6 +316,14 @@ def detect_image():
                 obj = secure_filename(img.filename)
                 video_path = os.path.join(os.getcwd(), "static", obj)
                 # model = torch.hub.load('yolov5', 'yolov5s', pretrained=True, source='local')  # force_reload = recache latest code
+                if(model_no == 1 or model_no == 2): #face or plate number
+                    model = torch.hub.load('yolov5', 'custom', 'best_faceplate', source='local')  # force_reload = recache latest code
+                elif(model_no ==3): #mobile phone
+                    model = torch.hub.load('yolov5', 'custom', 'best_phone', source='local')  # force_reload = recache latest code
+                elif(model_no ==4): #id & card
+                    model = torch.hub.load('yolov5', 'custom', 'best_card', source='local')  # force_reload = recache latest code
+
+                
                 model = torch.hub.load('yolov5', 'custom', 'privacy_yolov5_v6', source='local')  # force_reload = recache latest code
                 model.eval()
                 results = model([img])
@@ -418,6 +428,12 @@ def detect_video():
         if video.filename == '':
             return 'No selected file'
         
+        model_no = int(request.form['model'])
+
+  
+
+        
+    
 
         if video and allowed_file(video.filename):
             create_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -434,7 +450,17 @@ def detect_video():
             video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
             # print(video)
             subprocess.run("dir", shell=True)
-            subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'privacy_yolov5_v6.pt'], shell=True)
+            
+            if(model_no == 1): #face 
+                subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'best_faceplate.pt', '--model-no', '1'], shell=True)
+            elif(model_no == 2): #plate number
+                subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'best_faceplate.pt', '--model-no', '2'], shell=True)
+            elif(model_no == 3):
+                print("phone weights")
+                subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'best_phone.pt'], shell=True)
+            elif(model_no == 4):
+                subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'best_card.pt'], shell=True)
+
 
             # return os.path.join(uploads_dir, secure_filename(video.filename))
 
@@ -597,8 +623,11 @@ def detect_realtime():
     #     message = {"message": "로그인 해주세요."}
     #     return jsonify(message)
    
+
+   if request.method == 'POST':
     print("detect activated")
     video = request.files['video']
+    model_no = int(request.form['model'])
 
     video.save(os.path.join(uploads_dir, secure_filename(video.filename)))
     print(video)
@@ -655,130 +684,142 @@ def opencam():
 
     current_userid = get_jwt()["sub"]
 
+    if request.method == 'POST':
 
-    print("here")
-    subprocess.run(['python', 'detect.py', '--weights', 'privacy_yolov5_v6.pt', '--source', '0'], shell=True)
+        print("here")
 
-    time.sleep(1)
-
-
-    # video = open((os.path.join(os.getcwd(), "static", "0.mp4")), 'rb')
+        model_no = int(request.form['model'])
 
 
-    vid_originalpath = os.path.join(os.getcwd(), "static", "0.mp4")
-    vid_newfilename = "realtime_"  + str(uuid.uuid4()) + ".mp4"
-    new_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], vid_newfilename))
-    shutil.copyfile(vid_originalpath, new_path)
+        if model_no == 1:
+            subprocess.run(['python', 'detect.py', '--weights', 'best_faceplate.pt', '--source', '0', '--model-no', '1'], shell=True)
+        elif model_no == 2:
+            subprocess.run(['python', 'detect.py', '--weights', 'best_faceplate.pt', '--source', '0', '--model-no', '2'], shell=True)
+        elif model_no == 3:
+            subprocess.run(['python', 'detect.py', '--weights', 'best_phone.pt', '--source', '0'], shell=True)
+        elif model_no == 4:
+            subprocess.run(['python', 'detect.py', '--weights', 'best_card.pt', '--source', '0'], shell=True)
 
-    vid_newfilepath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], vid_newfilename))
-    
-    # os.rename(vid_oldname, vid_newfilepath)
-
-    video = open(vid_newfilepath, 'rb')
-    mimetype = "video/mp4"
-
-
-    # split_tup = os.path.splitext(video.filename)
-    file_extension = "mp4"
-
-    # obj = secure_filename(video.filename)
-    vid_bytes = video.read()
-    file_size = len(vid_bytes)
+        time.sleep(1)
 
 
-
-    video_path = os.path.join(os.getcwd(), "static", "0.mp4")
-    video_info = open("video_info.log", 'r')
-    video_info_data = video_info.read()
-    print('file read', video_info.read())
+        # video = open((os.path.join(os.getcwd(), "static", "0.mp4")), 'rb')
 
 
-    rawstring = 'type, class, time\n' + video_info_data
-    lines = rawstring.split('\n')
-    keys = lines[0].split(',')
-    result=[]
+        vid_originalpath = os.path.join(os.getcwd(), "static", "0.mp4")
+        vid_newfilename = "realtime_"  + str(uuid.uuid4()) + ".mp4"
+        new_path = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], vid_newfilename))
+        shutil.copyfile(vid_originalpath, new_path)
 
-    for line in lines[1:]:
-        values = line.split(',')
-        result.append(dict(zip(keys, values)))
+        vid_newfilepath = os.path.abspath(os.path.join(app.config['UPLOAD_FOLDER'], vid_newfilename))
+        
+        # os.rename(vid_oldname, vid_newfilepath)
 
-    new_data = {"absolute_path": vid_newfilepath}
-
-
-    result.insert(0, new_data)
-
-    video_json_file = open("sample.json")
-    video_json = json.load(video_json_file)
+        video = open(vid_newfilepath, 'rb')
+        mimetype = "video/mp4"
 
 
-    result.append(list(video_json))
+        # split_tup = os.path.splitext(video.filename)
+        file_extension = "mp4"
 
-    
-
-    create_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-
-    # vid_savename = f"static/0.mp4"
-    vid_savename_backslash = vid_newfilepath
-    vid_savename = vid_savename_backslash.replace("\\", "/")
-
-
-    # conn = mysql.connect()
-    conn.connect()
-    cursor = conn.cursor()
-
-    # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, "0.mp4", vid_newfilename)
-    # cursor.execute(sql)
-
-    # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
-    query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME, USERID) VALUES (%s, %s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
-    cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, "0.mp4", vid_newfilename, current_userid))
-
-    # data = cursor.fetchall()
-
-    conn.commit()
-    cursor.close()
-    conn.close()
-
-    #################################################################
-
-    conn.connect()
-    cursor = conn.cursor()
-
-    # query = "SELECT ID FROM process_info ORDER BY ID DESC LIMIT 1"
-    query = "SELECT ID FROM file ORDER BY ID DESC LIMIT 1" # 동영상 DB 이름 통일
-
-    cursor.execute(query)
-    result_dbs = cursor.fetchall()
-
-    for data in result_dbs:
-        print("DB에서 가져온 ID 값")
-        print(data.values())
-        print(data)
-        video_id = data['ID']
-        # video_id = data[0]
-
-    cursor.close()
-    conn.close()
+        # obj = secure_filename(video.filename)
+        vid_bytes = video.read()
+        file_size = len(vid_bytes)
 
 
 
-    id_data = {"video_id": video_id}
-    # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
-    result.insert(0, id_data)
+        video_path = os.path.join(os.getcwd(), "static", "0.mp4")
+        video_info = open("video_info.log", 'r')
+        video_info_data = video_info.read()
+        print('file read', video_info.read())
 
 
-    # if not data:
-    #     conn.commit()
-    # else: print ("DB upload failed")
+        rawstring = 'type, class, time\n' + video_info_data
+        lines = rawstring.split('\n')
+        keys = lines[0].split(',')
+        result=[]
 
-    # cursor.close()
-    # conn.close()
+        for line in lines[1:]:
+            values = line.split(',')
+            result.append(dict(zip(keys, values)))
 
-    json_string = json.dumps(result)
-                
-    print(json_string)
+        new_data = {"absolute_path": vid_newfilepath}
 
-    return json_string
+
+        result.insert(0, new_data)
+
+        video_json_file = open("sample.json")
+        video_json = json.load(video_json_file)
+
+
+        result.append(list(video_json))
+
+        
+
+        create_date = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+        # vid_savename = f"static/0.mp4"
+        vid_savename_backslash = vid_newfilepath
+        vid_savename = vid_savename_backslash.replace("\\", "/")
+
+
+        # conn = mysql.connect()
+        conn.connect()
+        cursor = conn.cursor()
+
+        # sql = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES ('%s', '%s', '%d', '%s', '%s', '%s')" % (format(current_time), vid_savename, file_size, file_extension, "0.mp4", vid_newfilename)
+        # cursor.execute(sql)
+
+        # query = "INSERT INTO process_info (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME) VALUES (%s, %s, %s, %s, %s, %s)"
+        query = "INSERT INTO file (CREATED_DATE, FILE_PATH, FILE_SIZE, FILE_TYPE, ORIGINAL_FILE_NAME, STORED_FILE_NAME, USERID) VALUES (%s, %s, %s, %s, %s, %s, %s)" # 동영상 DB 이름 통일
+        cursor.execute(query, (create_date, vid_newfilepath, file_size, mimetype, "0.mp4", vid_newfilename, current_userid))
+
+        # data = cursor.fetchall()
+
+        conn.commit()
+        cursor.close()
+        conn.close()
+
+        #################################################################
+
+        conn.connect()
+        cursor = conn.cursor()
+
+        # query = "SELECT ID FROM process_info ORDER BY ID DESC LIMIT 1"
+        query = "SELECT ID FROM file ORDER BY ID DESC LIMIT 1" # 동영상 DB 이름 통일
+
+        cursor.execute(query)
+        result_dbs = cursor.fetchall()
+
+        for data in result_dbs:
+            print("DB에서 가져온 ID 값")
+            print(data.values())
+            print(data)
+            video_id = data['ID']
+            # video_id = data[0]
+
+        cursor.close()
+        conn.close()
+
+
+
+        id_data = {"video_id": video_id}
+        # new_data = {"absolute_path": os.path.join(os.getcwd(), "static", obj), "video_base64": video_string}
+        result.insert(0, id_data)
+
+
+        # if not data:
+        #     conn.commit()
+        # else: print ("DB upload failed")
+
+        # cursor.close()
+        # conn.close()
+
+        json_string = json.dumps(result)
+                    
+        print(json_string)
+
+        return json_string
 
     # return "done"
 
