@@ -318,7 +318,7 @@ def detect_image():
                 video_path = os.path.join(os.getcwd(), "static", obj)
                 # model = torch.hub.load('yolov5', 'yolov5s', pretrained=True, source='local')  # force_reload = recache latest code
                 if(model_no == 1 or model_no == 2): #face or plate number
-                    model = torch.hub.load('yolov5', 'custom', 'best_faceplate', source='local')  # force_reload = recache latest code
+                    model = torch.hub.load('yolov5', 'custom', 'weights/face02', source='local')  # force_reload = recache latest code
                 elif(model_no ==3): #mobile phone
                     model = torch.hub.load('yolov5', 'custom', 'best_phone', source='local')  # force_reload = recache latest code
                 elif(model_no ==4): #id & card
@@ -474,9 +474,9 @@ def detect_video():
             subprocess.run("dir", shell=True)
             
             if(model_no == 1): #face 
-                subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'best_faceplate.pt', '--model-no', '1'], shell=True)
+                subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'weights/face02.pt', '--model-no', '1'], shell=True)
             elif(model_no == 2): #plate number
-                subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'best_faceplate.pt', '--model-no', '2'], shell=True)
+                subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'weights/face02.pt', '--model-no', '2'], shell=True)
             elif(model_no == 3):
                 print("phone weights")
                 subprocess.run(['python', 'detect.py', '--source', os.path.join(uploads_dir, secure_filename(video.filename)), '--weights', 'best_phone.pt'], shell=True)
