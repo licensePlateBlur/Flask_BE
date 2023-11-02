@@ -201,6 +201,8 @@ def run(
                     #frame 당 탐지된 객체 정보 저장
                     time_set.add(names[int(c)])
 
+                print("nu")
+
                 # Write results
                 for *xyxy, conf, cls in reversed(det):
                     if save_txt:  # Write to file

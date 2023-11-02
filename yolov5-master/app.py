@@ -333,13 +333,29 @@ def detect_image():
                 result_vals_wVehicle=[]
                 result_vals_wVehicle = json.loads(results.pandas().xyxy[0].to_json(orient="records"))
 
-                for i in range(len(result_vals_wVehicle) -1, -1, -1):
+                # for i in range(len(result_vals_wVehicle) -1, -1, -1):
+                #     print("index")
+                #     print(i)
+                #     if isinstance(result_vals_wVehicle[i], dict) and result_vals_wVehicle[i].get("name") == "vehicle":
+                #         del result_vals_wVehicle[i]
+                #     if model_no == 1 and result_vals_wVehicle[i].get("name") == "license-plate":
+                #         del result_vals_wVehicle[i]
+                #     if model_no == 2 and result_vals_wVehicle[i].get("name") == "face":
+                #         del result_vals_wVehicle[i]
+
+
+                new_result_vals_wVehicle = []
+                for i in range(len(result_vals_wVehicle) - 1, -1, -1):
                     if isinstance(result_vals_wVehicle[i], dict) and result_vals_wVehicle[i].get("name") == "vehicle":
-                        del result_vals_wVehicle[i]
-                    if isinstance(result_vals_wVehicle[i], dict) and model_no == 1 and result_vals_wVehicle[i].get("name") == "license-plate":
-                        del result_vals_wVehicle[i]
-                    if isinstance(result_vals_wVehicle[i], dict) and model_no == 2 and result_vals_wVehicle[i].get("name") == "face":
-                        del result_vals_wVehicle[i]
+                        continue
+                    if model_no == 1 and result_vals_wVehicle[i].get("name") == "license-plate":
+                        continue
+                    if model_no == 2 and result_vals_wVehicle[i].get("name") == "face":
+                        continue
+                    new_result_vals_wVehicle.append(result_vals_wVehicle[i])
+
+                # Replace the original list with the new list
+                result_vals_wVehicle = new_result_vals_wVehicle
 
                 
                 result_vals = []
@@ -698,9 +714,11 @@ def opencam():
 
 
         if model_no == 1:
-            subprocess.run(['python', 'detect.py', '--weights', 'best_faceplate.pt', '--source', '0', '--model-no', '1'], shell=True)
+            subprocess.run(['python', 'detect.py', '--weights', 'weights/face02.pt', '--source', '0', '--model-no', '1'], shell=True)
         elif model_no == 2:
-            subprocess.run(['python', 'detect.py', '--weights', 'best_faceplate.pt', '--source', '0', '--model-no', '2'], shell=True)
+            subprocess.run(['python', 'detect.py', '--weights', 'weights/face02.pt', '--source', '0', '--model-no', '2'], shell=True)
+        # elif model_no == 2:
+        #     subprocess.run(['python', 'detect.py', '--weights', 'best_faceplate.pt', '--source', '0', '--model-no', '2'], shell=True)
         elif model_no == 3:
             subprocess.run(['python', 'detect.py', '--weights', 'best_phone.pt', '--source', '0'], shell=True)
         elif model_no == 4:
